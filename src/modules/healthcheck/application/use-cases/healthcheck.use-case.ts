@@ -14,7 +14,6 @@ export class HealthCheckUseCase {
       timestamp: healthData.timestamp,
       uptime: healthData.uptime,
       environment: healthData.environment,
-      version: healthData.version,
     };
   }
 }

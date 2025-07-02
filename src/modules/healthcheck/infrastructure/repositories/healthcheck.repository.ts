@@ -1,15 +1,18 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { IHealthCheckRepository } from '../../domain/repositories/healthcheck.repository.interface';
 import { HealthCheck } from '../../domain/entities/healthcheck.entity';
 import { HealthStatus } from '../../domain/types/healthcheck.types';
 
 @Injectable()
 export class HealthCheckRepository implements IHealthCheckRepository {
+  constructor(private readonly configService: ConfigService) {}
+
   getHealthStatus(): Promise<HealthCheck> {
     const uptime = process.uptime();
     const timestamp = new Date().toISOString();
-    const environment = process.env.NODE_ENV || 'development';
-    const version = process.env.npm_package_version || '1.0.0';
+    const environment =
+      this.configService.get<string>('NODE_ENV') || 'development';
 
     // Additional health checks to implement:
     // - Database connectivity
@@ -21,7 +24,7 @@ export class HealthCheckRepository implements IHealthCheckRepository {
     const status = HealthStatus.OK;
 
     return Promise.resolve(
-      HealthCheck.create(status, timestamp, uptime, environment, version),
+      HealthCheck.create(status, timestamp, uptime, environment),
     );
   }
 }

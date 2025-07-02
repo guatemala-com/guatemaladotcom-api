@@ -9,7 +9,6 @@ export interface HealthCheckData {
   timestamp: string;
   uptime: number;
   environment: string;
-  version: string;
 }
 
 export interface DatabaseHealth {

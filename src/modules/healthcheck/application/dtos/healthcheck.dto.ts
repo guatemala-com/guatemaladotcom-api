@@ -3,7 +3,6 @@ export class HealthCheckDto {
   timestamp: string;
   uptime: number;
   environment: string;
-  version: string;
 }
 
 export class HealthCheckResponseDto {
