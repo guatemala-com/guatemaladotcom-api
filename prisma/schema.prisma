@@ -12,3 +12,466 @@ datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
 }
+
+model AprActionschedulerActions {
+  actionId           BigInt                    @id @default(autoincrement())
+  hook               String                    @db.VarChar(191)
+  status             String                    @db.VarChar(20)
+  scheduledDateGmt   DateTime?
+  scheduledDateLocal DateTime?
+  priority           Int                       @default(10)
+  args               String?                   @db.VarChar(191)
+  schedule           String?                   @db.LongText
+  groupId            BigInt                    @default(0)
+  attempts           Int                       @default(0)
+  lastAttemptGmt     DateTime?
+  lastAttemptLocal   DateTime?
+  claimId            BigInt                    @default(0)
+  extendedArgs       String?                   @db.VarChar(8000)
+  // Relations
+  group              AprActionschedulerGroups? @relation(fields: [groupId], references: [groupId])
+  claim              AprActionschedulerClaims? @relation(fields: [claimId], references: [claimId])
+  logs               AprActionschedulerLogs[]  @relation("ActionLogs")
+}
+
+model AprActionschedulerClaims {
+  claimId        BigInt                      @id @default(autoincrement())
+  dateCreatedGmt DateTime?
+  actions        AprActionschedulerActions[]
+}
+
+model AprActionschedulerGroups {
+  groupId BigInt                      @id @default(autoincrement())
+  slug    String                      @db.VarChar(255)
+  actions AprActionschedulerActions[]
+}
+
+model AprActionschedulerLogs {
+  logId        BigInt                    @id @default(autoincrement())
+  actionId     BigInt
+  message      String                    @db.Text
+  logDateGmt   DateTime?
+  logDateLocal DateTime?
+  // Relations
+  action       AprActionschedulerActions @relation(fields: [actionId], references: [actionId], name: "ActionLogs")
+}
+
+model AprAlm {
+  id              Int    @id @default(autoincrement())
+  name            String @db.Text
+  repeaterDefault String @db.LongText
+  repeaterType    String @db.Text
+}
+
+model AprAs3cfItems {
+  id                 BigInt  @id @default(autoincrement())
+  provider           String  @db.VarChar(18)
+  region             String  @db.VarChar(255)
+  bucket             String  @db.VarChar(255)
+  path               String  @db.VarChar(1024)
+  originalPath       String  @db.VarChar(1024)
+  isPrivate          Boolean @default(false)
+  sourceType         String  @db.VarChar(18)
+  sourceId           BigInt
+  sourcePath         String  @db.VarChar(1024)
+  originalSourcePath String  @db.VarChar(1024)
+  extraInfo          String? @db.LongText
+  originator         Int     @default(0)
+  isVerified         Boolean @default(true)
+}
+
+model AprCommentmeta {
+  metaId    BigInt       @id @default(autoincrement())
+  commentId BigInt
+  metaKey   String?      @db.VarChar(255)
+  metaValue String?      @db.LongText
+  // Relations
+  comment   AprComments? @relation(fields: [commentId], references: [commentId])
+}
+
+model AprComments {
+  commentId          BigInt           @id @default(autoincrement()) @map("comment_ID")
+  commentPostId      BigInt           @default(0)
+  commentAuthor      String           @db.TinyText
+  commentAuthorEmail String           @db.VarChar(100)
+  commentAuthorUrl   String           @db.VarChar(200)
+  commentAuthorIp    String           @db.VarChar(100)
+  commentDate        DateTime?
+  commentDateGmt     DateTime?
+  commentContent     String           @db.Text
+  commentKarma       Int              @default(0)
+  commentApproved    String           @default("1") @db.VarChar(20)
+  commentAgent       String           @db.VarChar(255)
+  commentType        String           @default("comment") @db.VarChar(20)
+  commentParent      BigInt           @default(0)
+  userId             BigInt           @default(0)
+  metas              AprCommentmeta[]
+}
+
+model AprLearnMeta {
+  id                     Int     @id @map("ID")
+  url                    String? @db.Text
+  thumbnailId            Int?
+  authorId               Int?
+  authorName             String? @db.VarChar(255)
+  images                 String? @db.Text
+  isSponsored            Boolean @default(false)
+  sponsorName            String? @db.VarChar(255)
+  sponsorUrl             String? @db.Text
+  sponsorImage           Int?    @default(0)
+  sponsorImageSidebarUrl String? @db.Text
+  sponsorImageSidebar    Int?    @default(0)
+  sponsorImageContentUrl String? @db.Text
+  sponsorImageContent    Int?    @default(0)
+  sponsorExtraData       String? @db.Text
+}
+
+model AprLinks {
+  linkId          BigInt    @id @default(autoincrement())
+  linkUrl         String    @db.VarChar(255)
+  linkName        String    @db.VarChar(255)
+  linkImage       String    @db.VarChar(255)
+  linkTarget      String    @db.VarChar(25)
+  linkDescription String    @db.VarChar(255)
+  linkVisible     String    @default("Y") @db.VarChar(20)
+  linkOwner       BigInt    @default(1)
+  linkRating      Int       @default(0)
+  linkUpdated     DateTime?
+  linkRel         String    @db.VarChar(255)
+  linkNotes       String    @db.MediumText
+  linkRss         String    @db.VarChar(255)
+}
+
+model AprMoppmUserReportTable {
+  id         Int     @id @default(autoincrement())
+  userEmail  String  @db.MediumText
+  loginTime  String? @db.MediumText
+  logoutTime String? @db.MediumText
+}
+
+model AprOptions {
+  optionId    BigInt @id @default(autoincrement())
+  optionName  String @db.VarChar(191)
+  optionValue String @db.LongText
+  autoload    String @default("yes") @db.VarChar(20)
+}
+
+model AprPostmeta {
+  metaId    BigInt    @id @default(autoincrement())
+  postId    BigInt
+  metaKey   String?   @db.VarChar(255)
+  metaValue String?   @db.LongText
+  // Relations
+  post      AprPosts? @relation(fields: [postId], references: [id])
+}
+
+model AprPosts {
+  id                  BigInt        @id @default(autoincrement()) @map("ID")
+  postAuthor          BigInt        @default(0)
+  postDate            DateTime?
+  postDateGmt         DateTime?
+  postContent         String        @db.LongText
+  postTitle           String        @db.Text
+  postExcerpt         String        @db.Text
+  postStatus          String        @default("publish") @db.VarChar(20)
+  commentStatus       String        @default("open") @db.VarChar(20)
+  pingStatus          String        @default("open") @db.VarChar(20)
+  postPassword        String        @db.VarChar(255)
+  postName            String        @db.VarChar(200)
+  toPing              String        @db.Text
+  pinged              String        @db.Text
+  postModified        DateTime?
+  postModifiedGmt     DateTime?
+  postContentFiltered String        @db.LongText
+  postParent          BigInt        @default(0)
+  guid                String        @db.VarChar(255)
+  menuOrder           Int           @default(0)
+  postType            String        @default("post") @db.VarChar(20)
+  postMimeType        String        @db.VarChar(100)
+  commentCount        BigInt        @default(0)
+  metas               AprPostmeta[]
+}
+
+model AprRankMath404Logs {
+  id            BigInt    @id @default(autoincrement())
+  uri           String    @db.VarChar(255)
+  accessed      DateTime?
+  timesAccessed BigInt    @default(1)
+  referer       String    @db.VarChar(255)
+  userAgent     String    @db.VarChar(255)
+}
+
+model AprRankMathAnalyticsGa {
+  id        BigInt    @id @default(autoincrement())
+  page      String    @db.VarChar(500)
+  created   DateTime?
+  pageviews Int
+  visitors  Int
+}
+
+model AprRankMathAnalyticsGsc {
+  id          BigInt    @id @default(autoincrement())
+  created     DateTime?
+  query       String    @db.VarChar(1000)
+  page        String    @db.VarChar(500)
+  clicks      Int
+  impressions Int
+  position    Float
+  ctr         Float
+}
+
+model AprRankMathAnalyticsInspections {
+  id                     BigInt    @id @default(autoincrement())
+  page                   String    @db.VarChar(500)
+  created                DateTime?
+  indexVerdict           String    @db.VarChar(64)
+  indexingState          String    @db.VarChar(64)
+  coverageState          String    @db.Text
+  pageFetchState         String    @db.VarChar(64)
+  robotsTxtState         String    @db.VarChar(64)
+  mobileUsabilityVerdict String    @db.VarChar(64)
+  mobileUsabilityIssues  String    @db.LongText
+  richResultsVerdict     String    @db.VarChar(64)
+  richResultsItems       String    @db.LongText
+  lastCrawlTime          DateTime?
+  crawledAs              String    @db.VarChar(64)
+  googleCanonical        String    @db.Text
+  userCanonical          String    @db.Text
+  sitemap                String    @db.Text
+  referringUrls          String    @db.LongText
+  rawApiResponse         String    @db.LongText
+}
+
+model AprRankMathAnalyticsKeywordManager {
+  id         BigInt  @id @default(autoincrement())
+  keyword    String  @db.VarChar(1000)
+  collection String? @db.VarChar(200)
+  isActive   Boolean @default(true)
+}
+
+model AprRankMathAnalyticsObjects {
+  id                 BigInt    @id @default(autoincrement())
+  created            DateTime?
+  title              String    @db.Text
+  page               String    @db.VarChar(500)
+  objectType         String    @db.VarChar(100)
+  objectSubType      String    @db.VarChar(100)
+  objectId           BigInt
+  primaryKey         String    @db.VarChar(255)
+  seoScore           Int       @default(0)
+  pageScore          Int       @default(0)
+  isIndexable        Boolean   @default(true)
+  schemasInUse       String?   @db.VarChar(500)
+  desktopInteractive Float?    @default(0)
+  desktopPagescore   Float?    @default(0)
+  mobileInteractive  Float?    @default(0)
+  mobilePagescore    Float?    @default(0)
+  pagespeedRefreshed DateTime?
+}
+
+model AprRankMathInternalLinks {
+  id           BigInt @id @default(autoincrement())
+  url          String @db.VarChar(255)
+  postId       BigInt
+  targetPostId BigInt
+  type         String @db.VarChar(8)
+}
+
+model AprRankMathInternalMeta {
+  objectId          BigInt @id
+  internalLinkCount Int?   @default(0)
+  externalLinkCount Int?   @default(0)
+  incomingLinkCount Int?   @default(0)
+}
+
+model AprRankMathRedirections {
+  id           BigInt    @id @default(autoincrement())
+  sources      String    @db.LongText
+  urlTo        String    @db.Text
+  headerCode   Int
+  hits         BigInt    @default(0)
+  status       String    @default("active") @db.VarChar(25)
+  created      DateTime?
+  updated      DateTime?
+  lastAccessed DateTime?
+}
+
+model AprRankMathRedirectionsCache {
+  id            BigInt  @id @default(autoincrement())
+  fromUrl       String  @db.Text
+  redirectionId BigInt
+  objectId      BigInt  @default(0)
+  objectType    String  @default("post") @db.VarChar(10)
+  isRedirected  Boolean @default(false)
+}
+
+model AprSml {
+  id       Int    @id @default(autoincrement())
+  smlName  String @db.VarChar(200)
+  smlEmail String @db.VarChar(200)
+}
+
+model AprSmushDirImages {
+  id        Int       @id @default(autoincrement())
+  path      String    @db.Text
+  resize    String?   @db.VarChar(55)
+  lossy     String?   @db.VarChar(55)
+  error     String?   @db.VarChar(55)
+  imageSize Int?
+  origSize  Int?
+  fileTime  Int?
+  lastScan  DateTime?
+  meta      String?   @db.Text
+}
+
+model AprSponsorPost {
+  sponsorPostId Int     @id @default(autoincrement())
+  postIds       String? @db.VarChar(256)
+  randomValue   Int?
+  postType      String? @db.VarChar(32)
+}
+
+model AprTermRelationships {
+  objectId       BigInt
+  termTaxonomyId BigInt
+  termOrder      Int    @default(0)
+
+  @@id([objectId, termTaxonomyId])
+}
+
+model AprTermTaxonomy {
+  termTaxonomyId BigInt @id @default(autoincrement())
+  termId         BigInt @default(0)
+  taxonomy       String @db.VarChar(32)
+  description    String @db.LongText
+  parent         BigInt @default(0)
+  count          BigInt @default(0)
+}
+
+model AprTermmeta {
+  metaId    BigInt  @id @default(autoincrement())
+  termId    BigInt
+  metaKey   String? @db.VarChar(255)
+  metaValue String? @db.LongText
+}
+
+model AprTerms {
+  termId    BigInt @id @default(autoincrement())
+  name      String @db.VarChar(200)
+  slug      String @db.VarChar(200)
+  termGroup BigInt @default(0)
+}
+
+model AprUsermeta {
+  umetaId   BigInt  @id @default(autoincrement())
+  userId    BigInt
+  metaKey   String? @db.VarChar(255)
+  metaValue String? @db.LongText
+}
+
+model AprUsers {
+  id                BigInt    @id @default(autoincrement()) @map("ID")
+  userLogin         String    @db.VarChar(60)
+  userPass          String    @db.VarChar(255)
+  userNicename      String    @db.VarChar(50)
+  userEmail         String    @db.VarChar(100)
+  userUrl           String    @db.VarChar(100)
+  userRegistered    DateTime?
+  userActivationKey String    @db.VarChar(255)
+  userStatus        Int       @default(0)
+  displayName       String    @db.VarChar(250)
+}
+
+model AprYoastIndexable {
+  id                          Int       @id @default(autoincrement())
+  permalink                   String?   @db.LongText
+  permalinkHash               String?   @db.VarChar(40)
+  objectId                    BigInt?
+  objectType                  String    @db.VarChar(32)
+  objectSubType               String?   @db.VarChar(32)
+  authorId                    BigInt?
+  postParent                  BigInt?
+  title                       String?   @db.Text
+  description                 String?   @db.MediumText
+  breadcrumbTitle             String?   @db.Text
+  postStatus                  String?   @db.VarChar(20)
+  isPublic                    Boolean?
+  isProtected                 Boolean?  @default(false)
+  hasPublicPosts              Boolean?
+  numberOfPages               Int?
+  canonical                   String?   @db.LongText
+  primaryFocusKeyword         String?   @db.VarChar(191)
+  primaryFocusKeywordScore    Int?
+  readabilityScore            Int?
+  isCornerstone               Boolean?  @default(false)
+  isRobotsNoindex             Boolean?  @default(false)
+  isRobotsNofollow            Boolean?  @default(false)
+  isRobotsNoarchive           Boolean?  @default(false)
+  isRobotsNoimageindex        Boolean?  @default(false)
+  isRobotsNosnippet           Boolean?  @default(false)
+  twitterTitle                String?   @db.Text
+  twitterImage                String?   @db.LongText
+  twitterDescription          String?   @db.LongText
+  twitterImageId              String?   @db.VarChar(191)
+  twitterImageSource          String?   @db.Text
+  openGraphTitle              String?   @db.Text
+  openGraphDescription        String?   @db.LongText
+  openGraphImage              String?   @db.LongText
+  openGraphImageId            String?   @db.VarChar(191)
+  openGraphImageSource        String?   @db.Text
+  openGraphImageMeta          String?   @db.MediumText
+  linkCount                   Int?
+  incomingLinkCount           Int?
+  prominentWordsVersion       Int?
+  createdAt                   DateTime?
+  updatedAt                   DateTime?
+  blogId                      BigInt    @default(1)
+  language                    String?   @db.VarChar(32)
+  region                      String?   @db.VarChar(32)
+  schemaPageType              String?   @db.VarChar(64)
+  schemaArticleType           String?   @db.VarChar(64)
+  hasAncestors                Boolean?  @default(false)
+  estimatedReadingTimeMinutes Int?
+  version                     Int       @default(1)
+  objectLastModified          DateTime?
+  objectPublishedAt           DateTime?
+  inclusiveLanguageScore      Int?
+}
+
+model AprYoastIndexableHierarchy {
+  indexableId Int
+  ancestorId  Int
+  depth       Int?
+  blogId      BigInt @default(1)
+
+  @@id([indexableId, ancestorId])
+}
+
+model AprYoastMigrations {
+  id      Int     @id @default(autoincrement())
+  version String? @db.VarChar(191)
+}
+
+model AprYoastPrimaryTerm {
+  id        Int       @id @default(autoincrement())
+  postId    BigInt?
+  termId    BigInt?
+  taxonomy  String    @db.VarChar(32)
+  createdAt DateTime?
+  updatedAt DateTime?
+  blogId    BigInt    @default(1)
+}
+
+model AprYoastSeoLinks {
+  id           BigInt @id @default(autoincrement())
+  url          String @db.VarChar(255)
+  postId       BigInt
+  targetPostId BigInt
+  type         String @db.VarChar(8)
+}
+
+model AprYoastSeoMeta {
+  objectId          BigInt @id
+  internalLinkCount Int?
+  incomingLinkCount Int?
+}
