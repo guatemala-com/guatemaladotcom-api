@@ -32,6 +32,14 @@ This project is part of a comprehensive migration from a traditional WordPress w
 $ pnpm install
 ```
 
+## Environment Configuration
+
+Create a `.env` file in the project root to set environment variables. Copy the example file:
+
+```bash
+$ cp .env.example .env
+```
+
 ## Database Setup
 
 ```bash
@@ -45,20 +53,18 @@ $ pnpm prisma migrate dev
 $ pnpm prisma db seed
 ```
 
-## Environment Configuration
+## Docker
 
-Create a `.env` file in the root directory with the following variables:
+You can quickly start a local MySQL database for development using the provided `docker-compose.yml` file.
 
-```env
-# Database
-DATABASE_URL="mysql://username:password@localhost:3306/guatemala_db"
+Make sure you have a `.env` file in the project root with the required variables.
 
-# WordPress API
-WORDPRESS_API_URL="https://your-wordpress-site.com/wp-json/wp/v2"
+```bash
+# Start MySQL:
+$ docker-compose --env-file env_file_path up -d
 
-# Application
-PORT=3000
-NODE_ENV=development
+# top MySQL:
+$ docker-compose down
 ```
 
 ## Compile and Run the Project
