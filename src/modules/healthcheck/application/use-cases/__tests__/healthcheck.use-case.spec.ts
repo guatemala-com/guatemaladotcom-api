@@ -1,27 +1,17 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { HealthCheckUseCase } from '../../use-cases/healthcheck.use-case';
 import { HealthCheckRepository } from '../../../infrastructure/repositories/healthcheck.repository';
-import { HealthCheckDto } from '../../dtos/healthcheck.dto';
-import { HealthCheck } from '../../../domain/entities/healthcheck.entity';
-import { HealthStatus } from '../../../domain/types/healthcheck.types';
+import {
+  mockHealthData,
+  mockHealthDto,
+  mockHealthCheckRepository,
+  mockDatabaseError,
+  createMockHealthData,
+} from '../../../__mocks__';
 
 describe('HealthCheckUseCase', () => {
   let useCase: HealthCheckUseCase;
   let repository: jest.Mocked<HealthCheckRepository>;
-
-  const mockHealthData: HealthCheck = {
-    status: HealthStatus.OK,
-    timestamp: '2024-01-01T00:00:00.000Z',
-    uptime: 123.45,
-    environment: 'test',
-  } as HealthCheck;
-
-  const mockHealthDto: HealthCheckDto = {
-    status: HealthStatus.OK,
-    timestamp: '2024-01-01T00:00:00.000Z',
-    uptime: 123.45,
-    environment: 'test',
-  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -29,9 +19,7 @@ describe('HealthCheckUseCase', () => {
         HealthCheckUseCase,
         {
           provide: HealthCheckRepository,
-          useValue: {
-            getHealthStatus: jest.fn(),
-          },
+          useValue: mockHealthCheckRepository,
         },
       ],
     }).compile();
@@ -62,8 +50,7 @@ describe('HealthCheckUseCase', () => {
     it('should handle repository errors', async () => {
       // Arrange
       const getHealthStatusSpy = jest.spyOn(repository, 'getHealthStatus');
-      const error = new Error('Database connection failed');
-      repository.getHealthStatus.mockRejectedValue(error);
+      repository.getHealthStatus.mockRejectedValue(mockDatabaseError);
 
       // Act & Assert
       await expect(useCase.execute()).rejects.toThrow(
@@ -92,17 +79,16 @@ describe('HealthCheckUseCase', () => {
 
     it('should handle different health statuses', async () => {
       // Arrange
-      const errorHealthData = {
-        ...mockHealthData,
-        status: HealthStatus.ERROR,
-      } as HealthCheck;
+      const errorHealthData = createMockHealthData({
+        status: 'error' as const,
+      });
       repository.getHealthStatus.mockResolvedValue(errorHealthData);
 
       // Act
       const result = await useCase.execute();
 
       // Assert
-      expect(result.status).toBe(HealthStatus.ERROR);
+      expect(result.status).toBe('error');
     });
   });
 });

@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { HealthCheckRepository } from '../../repositories/healthcheck.repository';
 import { HealthCheck } from '../../../domain/entities/healthcheck.entity';
 import { HealthStatus } from '../../../domain/types/healthcheck.types';
+import { mockConfigService } from '../../../__mocks__';
 
 describe('HealthCheckRepository', () => {
   let repository: HealthCheckRepository;
@@ -14,9 +15,7 @@ describe('HealthCheckRepository', () => {
         HealthCheckRepository,
         {
           provide: ConfigService,
-          useValue: {
-            get: jest.fn(),
-          },
+          useValue: mockConfigService,
         },
       ],
     }).compile();

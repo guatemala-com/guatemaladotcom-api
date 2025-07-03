@@ -2,27 +2,17 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { HealthCheckController } from '../../../infrastructure/controllers/healthcheck.controller';
 import { HealthCheckUseCase } from '../../../application/use-cases/healthcheck.use-case';
 import {
-  HealthCheckResponseDto,
-  HealthCheckDto,
-} from '../../../application/dtos/healthcheck.dto';
+  mockHealthData,
+  mockHealthResponse,
+  mockHealthCheckUseCase,
+  mockHealthCheckError,
+  createMockHealthData,
+} from '../../../__mocks__';
 import { HealthStatus } from '../../../domain/types/healthcheck.types';
 
 describe('HealthCheckController', () => {
   let controller: HealthCheckController;
   let useCase: jest.Mocked<HealthCheckUseCase>;
-
-  const mockHealthData = {
-    status: HealthStatus.OK,
-    timestamp: '2024-01-01T00:00:00.000Z',
-    uptime: 123.45,
-    environment: 'test',
-  };
-
-  const mockHealthResponse: HealthCheckResponseDto = {
-    success: true,
-    data: mockHealthData,
-    message: 'Health check completed successfully',
-  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -30,9 +20,7 @@ describe('HealthCheckController', () => {
       providers: [
         {
           provide: HealthCheckUseCase,
-          useValue: {
-            execute: jest.fn(),
-          },
+          useValue: mockHealthCheckUseCase,
         },
       ],
     }).compile();
@@ -66,8 +54,7 @@ describe('HealthCheckController', () => {
     it('should handle use case errors', async () => {
       // Arrange
       const executeSpy = jest.spyOn(useCase, 'execute');
-      const error = new Error('Health check failed');
-      useCase.execute.mockRejectedValue(error);
+      useCase.execute.mockRejectedValue(mockHealthCheckError);
 
       // Act & Assert
       await expect(controller.getHealthStatus()).rejects.toThrow(
@@ -97,10 +84,9 @@ describe('HealthCheckController', () => {
 
     it('should handle different health statuses from use case', async () => {
       // Arrange
-      const errorHealthData = {
-        ...mockHealthData,
+      const errorHealthData = createMockHealthData({
         status: HealthStatus.ERROR,
-      };
+      });
       useCase.execute.mockResolvedValue(errorHealthData);
 
       // Act
@@ -113,10 +99,9 @@ describe('HealthCheckController', () => {
 
     it('should always return success: true regardless of health status', async () => {
       // Arrange
-      const warningHealthData = {
-        ...mockHealthData,
+      const warningHealthData = createMockHealthData({
         status: HealthStatus.WARNING,
-      };
+      });
       useCase.execute.mockResolvedValue(warningHealthData);
 
       // Act
@@ -232,7 +217,9 @@ describe('HealthCheckController', () => {
 
     it('should handle use case returning null', async () => {
       // Arrange
-      useCase.execute.mockResolvedValue(null as unknown as HealthCheckDto);
+      useCase.execute.mockResolvedValue(
+        null as unknown as typeof mockHealthData,
+      );
 
       // Act
       const result = await controller.getHealthStatus();
