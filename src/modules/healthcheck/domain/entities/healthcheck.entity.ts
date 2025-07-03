@@ -4,7 +4,6 @@ export class HealthCheck {
     public readonly timestamp: string,
     public readonly uptime: number,
     public readonly environment: string,
-    public readonly version: string,
   ) {}
 
   static create(
@@ -12,9 +11,8 @@ export class HealthCheck {
     timestamp: string,
     uptime: number,
     environment: string,
-    version: string,
   ): HealthCheck {
-    return new HealthCheck(status, timestamp, uptime, environment, version);
+    return new HealthCheck(status, timestamp, uptime, environment);
   }
 
   isHealthy(): boolean {
