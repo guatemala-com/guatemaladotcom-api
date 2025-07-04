@@ -7,7 +7,7 @@ import {
   mockHealthCheckRepository,
   mockDatabaseError,
   createMockHealthData,
-} from '../../../__mocks__';
+} from '../../../__mocks__/healthcheck.mocks';
 
 describe('HealthCheckUseCase', () => {
   let useCase: HealthCheckUseCase;

@@ -7,7 +7,7 @@ import {
   mockHealthCheckUseCase,
   mockHealthCheckError,
   createMockHealthData,
-} from '../../../__mocks__';
+} from '../../../__mocks__/healthcheck.mocks';
 import { HealthStatus } from '../../../domain/types/healthcheck.types';
 
 describe('HealthCheckController', () => {
