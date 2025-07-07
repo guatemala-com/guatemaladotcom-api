@@ -19,6 +19,7 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
+    "test:ci": "jest --coverage --coverageThreshold='{ \"global\": { \"branches\": 80, \"functions\": 80, \"lines\": 80, \"statements\": 80 } }'",
     "generate": "npx prisma generate"
   },
   "dependencies": {
