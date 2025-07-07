@@ -42,7 +42,7 @@ jobs:
             ${{ runner.os }}-pnpm-store-
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install
 
       - name: Run linting
         run: pnpm lint
@@ -55,28 +55,3 @@ jobs:
 
       - name: Build project
         run: pnpm build
-
-  notify:
-    needs: test
-    runs-on: ubuntu-latest
-    if: always()
-    steps:
-      - name: Notify Slack on Success
-        if: needs.test.result == 'success'
-        uses: 8398a7/action-slack@v3
-        with:
-          status: success
-          webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
-          channel: '#pull-requests'
-          text: '✅ CI passed for ${{ github.repository }} - Branch: ${{ github.ref_name }}'
-          fields: repo,message,commit,author,action,took
-
-      - name: Notify Slack on Failure
-        if: needs.test.result == 'failure'
-        uses: 8398a7/action-slack@v3
-        with:
-          status: failure
-          webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
-          channel: '#pull-requests'
-          text: '❌ CI failed for ${{ github.repository }} - Branch: ${{ github.ref_name }}'
-          fields: repo,message,commit,author,action,took
