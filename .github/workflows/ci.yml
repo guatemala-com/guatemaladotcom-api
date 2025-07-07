@@ -67,7 +67,7 @@ jobs:
         with:
           status: success
           webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
-          channel: '#general'
+          channel: '#pull-requests'
           text: '✅ CI passed for ${{ github.repository }} - Branch: ${{ github.ref_name }}'
           fields: repo,message,commit,author,action,took
 
@@ -77,6 +77,6 @@ jobs:
         with:
           status: failure
           webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
-          channel: '#general'
+          channel: '#pull-requests'
           text: '❌ CI failed for ${{ github.repository }} - Branch: ${{ github.ref_name }}'
           fields: repo,message,commit,author,action,took
