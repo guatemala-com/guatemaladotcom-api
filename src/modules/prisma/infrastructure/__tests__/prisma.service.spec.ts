@@ -64,10 +64,10 @@ describe('PrismaService', () => {
 
     it('should handle connection errors', async () => {
       // Arrange
-      const connectionError: Error = new Error('Failed to connect to database');
+      const connectionError = new Error('Failed to connect to database');
       const connectSpy = jest
         .spyOn(service, '$connect')
-        .mockRejectedValue(connectionError);
+        .mockRejectedValue(connectionError as unknown);
 
       // Act & Assert
       await expect(service.onModuleInit()).rejects.toThrow(
