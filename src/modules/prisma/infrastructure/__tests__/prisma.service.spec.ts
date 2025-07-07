@@ -51,7 +51,9 @@ describe('PrismaService', () => {
       const connectSpy = jest
         .spyOn(service, '$connect')
         .mockResolvedValue(undefined);
-      const logSpy = jest.spyOn(service['logger'], 'log').mockImplementation();
+      const logSpy = jest
+        .spyOn(service['logger'], 'log')
+        .mockImplementation(() => undefined);
 
       // Act
       await service.onModuleInit();
@@ -79,7 +81,9 @@ describe('PrismaService', () => {
     it('should log initialization message after successful connection', async () => {
       // Arrange
       jest.spyOn(service, '$connect').mockResolvedValue(undefined);
-      const logSpy = jest.spyOn(service['logger'], 'log').mockImplementation();
+      const logSpy = jest
+        .spyOn(service['logger'], 'log')
+        .mockImplementation(() => undefined);
 
       // Act
       await service.onModuleInit();
@@ -158,7 +162,9 @@ describe('PrismaService', () => {
     it('should log with correct message format', async () => {
       // Arrange
       jest.spyOn(service, '$connect').mockResolvedValue(undefined);
-      const logSpy = jest.spyOn(service['logger'], 'log').mockImplementation();
+      const logSpy = jest
+        .spyOn(service['logger'], 'log')
+        .mockImplementation(() => undefined);
 
       // Act
       await service.onModuleInit();
