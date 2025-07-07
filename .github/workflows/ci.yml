@@ -1,4 +1,4 @@
-name: CI
+name: Build, Test & Quality Check
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [main, develop]
 
 jobs:
-  test:
+  build-test-quality:
     runs-on: ubuntu-latest
 
     strategy:
