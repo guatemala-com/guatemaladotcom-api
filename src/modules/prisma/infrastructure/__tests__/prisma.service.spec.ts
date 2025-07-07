@@ -64,7 +64,7 @@ describe('PrismaService', () => {
 
     it('should handle connection errors', async () => {
       // Arrange
-      const connectionError = new Error('Failed to connect to database');
+      const connectionError: Error = new Error('Failed to connect to database');
       const connectSpy = jest
         .spyOn(service, '$connect')
         .mockRejectedValue(connectionError);
@@ -106,7 +106,7 @@ describe('PrismaService', () => {
 
     it('should handle disconnection errors', async () => {
       // Arrange
-      const disconnectionError = new Error(
+      const disconnectionError: Error = new Error(
         'Failed to disconnect from database',
       );
       const disconnectSpy = jest
