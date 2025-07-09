@@ -31,8 +31,8 @@ import { OAuthAuthGuard } from './infrastructure/guards/oauth-auth.guard';
         secret: configService.get<string>('JWT_SECRET', 'your-secret-key'),
         signOptions: {
           expiresIn: configService.get<string>('JWT_EXPIRES_IN', '1h'),
-          issuer: 'guatemala.com',
-          audience: 'guatemala-api',
+          issuer: configService.get<string>('JWT_ISSUER', 'guatemala.com'),
+          audience: configService.get<string>('JWT_AUDIENCE', 'guatemala-api'),
         },
       }),
       inject: [ConfigService],

@@ -10,6 +10,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { ThrottlerGuard } from '@nestjs/throttler';
+import { ConfigService } from '@nestjs/config';
 import {
   TokenRequestDto,
   TokenResponseDto,
@@ -31,6 +32,7 @@ export class AuthController {
     private readonly generateTokenUseCase: GenerateTokenUseCase,
     private readonly verifyTokenUseCase: VerifyTokenUseCase,
     private readonly generateClientCredentialsUseCase: GenerateClientCredentialsUseCase,
+    private readonly configService: ConfigService,
   ) {}
 
   /**
