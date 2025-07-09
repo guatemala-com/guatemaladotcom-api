@@ -2,30 +2,17 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
-import { AuthService, TokenPayload } from '../services/auth.service';
-import * as fs from 'fs';
+import { TokenPayload } from '../../domain/entities/token.entity';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(
-    private configService: ConfigService,
-    private authService: AuthService,
-  ) {
-    const publicKeyPath = configService.get<string>('JWT_PUBLIC_KEY_PATH');
-
-    if (!publicKeyPath) {
-      throw new Error('JWT_PUBLIC_KEY_PATH not configured');
-    }
-
-    const publicKey = fs.readFileSync(publicKeyPath, 'utf8');
-
+  constructor(private configService: ConfigService) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: publicKey,
-      algorithms: ['RS256'],
+      secretOrKey: configService.get<string>('JWT_SECRET', 'your-secret-key'),
       issuer: configService.get<string>('JWT_ISSUER', 'guatemala.com'),
-      audience: configService.get<string>('JWT_AUDIENCE', 'guatemala.com-api'),
+      audience: configService.get<string>('JWT_AUDIENCE', 'guatemala-api'),
     });
   }
 

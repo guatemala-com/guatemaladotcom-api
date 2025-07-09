@@ -8,23 +8,30 @@ import {
   HttpCode,
   HttpStatus,
   BadRequestException,
-  UnauthorizedException,
 } from '@nestjs/common';
 import { ThrottlerGuard } from '@nestjs/throttler';
-import { AuthService, ClientCredentials } from '../services/auth.service';
 import {
   TokenRequestDto,
   TokenResponseDto,
   TokenVerificationRequestDto,
   TokenVerificationResponseDto,
 } from '../../application/dtos/token.dto';
+import { ValidateClientUseCase } from '../../application/use-cases/validate-client.use-case';
+import { GenerateTokenUseCase } from '../../application/use-cases/generate-token.use-case';
+import { VerifyTokenUseCase } from '../../application/use-cases/verify-token.use-case';
+import { GenerateClientCredentialsUseCase } from '../../application/use-cases/generate-client-credentials.use-case';
 
 @Controller('oauth')
 @UseGuards(ThrottlerGuard)
 export class AuthController {
   private readonly logger = new Logger(AuthController.name);
 
-  constructor(private authService: AuthService) {}
+  constructor(
+    private readonly validateClientUseCase: ValidateClientUseCase,
+    private readonly generateTokenUseCase: GenerateTokenUseCase,
+    private readonly verifyTokenUseCase: VerifyTokenUseCase,
+    private readonly generateClientCredentialsUseCase: GenerateClientCredentialsUseCase,
+  ) {}
 
   /**
    * OAuth 2.0 Token Endpoint (Client Credentials Flow)
@@ -51,21 +58,22 @@ export class AuthController {
     this.logger.debug(
       `Validating credentials for client: ${tokenRequest.client_id}`,
     );
-    const isValid = this.authService.validateClient(
-      tokenRequest.client_id,
-      tokenRequest.client_secret,
-    );
 
-    if (!isValid) {
+    try {
+      await this.validateClientUseCase.execute({
+        clientId: tokenRequest.client_id,
+        clientSecret: tokenRequest.client_secret,
+      });
+
+      this.logger.log(
+        `Credentials validated successfully for client: ${tokenRequest.client_id}`,
+      );
+    } catch (error) {
       this.logger.warn(
         `Invalid credentials for client: ${tokenRequest.client_id}`,
       );
-      throw new UnauthorizedException('Invalid client credentials');
+      throw error;
     }
-
-    this.logger.log(
-      `Credentials validated successfully for client: ${tokenRequest.client_id}`,
-    );
 
     // Generate access token with scope validation
     this.logger.debug(
@@ -73,20 +81,20 @@ export class AuthController {
     );
 
     try {
-      const accessToken = await this.authService.generateAccessToken(
-        tokenRequest.client_id,
-        tokenRequest.scope,
-      );
+      const tokenResponse = await this.generateTokenUseCase.execute({
+        clientId: tokenRequest.client_id,
+        scope: tokenRequest.scope,
+      });
 
       this.logger.log(
         `Access token generated successfully for client: ${tokenRequest.client_id}`,
       );
 
       return {
-        access_token: accessToken,
-        token_type: 'Bearer',
-        expires_in: 3600, // 1 hour
-        scope: tokenRequest.scope,
+        access_token: tokenResponse.accessToken,
+        token_type: tokenResponse.tokenType,
+        expires_in: tokenResponse.expiresIn,
+        scope: tokenResponse.scope,
       };
     } catch (error) {
       if (error instanceof BadRequestException) {
@@ -107,10 +115,10 @@ export class AuthController {
    * Endpoint to generate client credentials (development only)
    */
   @Get('generate-client')
-  generateClient(): ClientCredentials {
+  generateClient() {
     this.logger.log('Client credentials generation requested');
 
-    const credentials = this.authService.generateClientCredentials();
+    const credentials = this.generateClientCredentialsUseCase.execute();
 
     this.logger.log(`Client credentials generated: ${credentials.client_id}`);
 
@@ -127,32 +135,19 @@ export class AuthController {
   ): Promise<TokenVerificationResponseDto> {
     this.logger.debug('Token verification requested');
 
-    try {
-      const payload = await this.authService.validateToken(body.token);
+    const verificationResult = await this.verifyTokenUseCase.execute({
+      token: body.token,
+    });
 
-      this.logger.log(`Token verified successfully for client: ${payload.sub}`);
-
-      return {
-        valid: true,
-        payload: {
-          client_id: payload.sub,
-          issuer: payload.iss,
-          audience: payload.aud,
-          issued_at: new Date(payload.iat * 1000).toISOString(),
-          expires_at: new Date(payload.exp * 1000).toISOString(),
-          scope: payload.scope,
-        },
-      };
-    } catch (error) {
-      this.logger.warn(
-        `Token verification failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+    if (verificationResult.valid) {
+      this.logger.log(
+        `Token verified successfully for client: ${verificationResult.payload?.client_id}`,
       );
-
-      return {
-        valid: false,
-        error: 'Invalid token',
-      };
+    } else {
+      this.logger.warn('Token verification failed');
     }
+
+    return verificationResult;
   }
 
   /**

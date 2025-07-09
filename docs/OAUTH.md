@@ -152,15 +152,28 @@ Generate client credentials for development.
 ```json
 {
   "client_id": "gt_client_abc123",
-  "client_secret": "gt_secret_def456"
+  "client_secret": "development"
 }
 ```
+
+**Note**: In development mode (when `OAUTH_CLIENTS` is not configured), the `client_secret` will always be `"development"` for simplicity. In production mode, a unique secret will be generated.
 
 ## Usage Examples
 
 ### Requesting a Token with Specific Scopes
 
 ```bash
+# Development mode (no OAUTH_CLIENTS configured)
+curl -X POST http://localhost:3000/api/oauth/token \
+  -H "Content-Type: application/json" \
+  -d '{
+    "grant_type": "client_credentials",
+    "client_id": "gt_client_abc123",
+    "client_secret": "development",
+    "scope": "read write"
+  }'
+
+# Production mode (with OAUTH_CLIENTS configured)
 curl -X POST http://localhost:3000/api/oauth/token \
   -H "Content-Type: application/json" \
   -d '{
