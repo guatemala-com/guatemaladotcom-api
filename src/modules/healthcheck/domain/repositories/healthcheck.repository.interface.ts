@@ -1,5 +1,5 @@
 import { HealthCheck } from '../entities/healthcheck.entity';
 
-export interface IHealthCheckRepository {
+export interface HealthCheckRepository {
   getHealthStatus(): Promise<HealthCheck>;
 }

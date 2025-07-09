@@ -25,6 +25,7 @@ global.testUtils = {
 // Global test environment setup
 process.env.NODE_ENV = 'test';
 process.env.PORT = '3001';
+process.env.ALLOWED_ORIGINS = 'http://localhost:3000,https://guatemala.com';
 
 // Suppress console logs during tests (optional)
 if (process.env.SUPPRESS_LOGS === 'true') {

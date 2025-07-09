@@ -1,19 +1,40 @@
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from '../app.module';
+import helmet from 'helmet';
 
-// Mock NestJS modules
+// Mock only the necessary modules
 jest.mock('@nestjs/core');
 jest.mock('@nestjs/config');
+jest.mock('helmet');
 
 describe('main.ts', () => {
   let mockApp: {
     get: jest.Mock;
     setGlobalPrefix: jest.Mock;
     listen: jest.Mock;
+    use: jest.Mock;
+    enableCors: jest.Mock;
+    useGlobalPipes: jest.Mock;
   };
   let mockConfigService: {
     get: jest.Mock;
+  };
+
+  // Helper function to set config values
+  const setConfigValues = (overrides: {
+    PORT?: number | string;
+    ALLOWED_ORIGINS?: string;
+  }) => {
+    mockConfigService.get.mockImplementation((key: string) => {
+      if (key === 'PORT' && overrides.PORT !== undefined) return overrides.PORT;
+      if (key === 'ALLOWED_ORIGINS' && overrides.ALLOWED_ORIGINS !== undefined)
+        return overrides.ALLOWED_ORIGINS;
+      // Use default values
+      if (key === 'PORT') return 3001;
+      if (key === 'ALLOWED_ORIGINS') return undefined;
+      return undefined;
+    });
   };
 
   beforeEach(() => {
@@ -24,11 +45,18 @@ describe('main.ts', () => {
       get: jest.fn(),
       setGlobalPrefix: jest.fn(),
       listen: jest.fn(),
+      use: jest.fn(),
+      enableCors: jest.fn(),
+      useGlobalPipes: jest.fn(),
     };
 
-    // Mock ConfigService
+    // Mock ConfigService with safe defaults
     mockConfigService = {
-      get: jest.fn(),
+      get: jest.fn((key: string) => {
+        if (key === 'PORT') return 3001;
+        if (key === 'ALLOWED_ORIGINS') return undefined;
+        return undefined;
+      }),
     };
 
     // Mock NestFactory.create
@@ -43,10 +71,8 @@ describe('main.ts', () => {
     it('should create app with AppModule', async () => {
       // Arrange
       mockApp.get.mockReturnValue(mockConfigService);
-      mockConfigService.get.mockReturnValue(3001);
 
       // Act
-      // Import and execute the bootstrap function
       const mainModule = await import('../main');
       await mainModule.bootstrap();
 
@@ -58,7 +84,6 @@ describe('main.ts', () => {
     it('should get ConfigService from app', async () => {
       // Arrange
       mockApp.get.mockReturnValue(mockConfigService);
-      mockConfigService.get.mockReturnValue(3001);
 
       // Act
       const mainModule = await import('../main');
@@ -71,7 +96,6 @@ describe('main.ts', () => {
     it('should set global prefix to api', async () => {
       // Arrange
       mockApp.get.mockReturnValue(mockConfigService);
-      mockConfigService.get.mockReturnValue(3001);
 
       // Act
       const mainModule = await import('../main');
@@ -81,10 +105,70 @@ describe('main.ts', () => {
       expect(mockApp.setGlobalPrefix).toHaveBeenCalledWith('api');
     });
 
+    it('should use helmet middleware', async () => {
+      // Arrange
+      mockApp.get.mockReturnValue(mockConfigService);
+
+      // Act
+      const mainModule = await import('../main');
+      await mainModule.bootstrap();
+
+      // Assert
+      expect(mockApp.use).toHaveBeenCalledWith(helmet());
+    });
+
+    it('should configure CORS with default origins when ALLOWED_ORIGINS not set', async () => {
+      // Arrange
+      mockApp.get.mockReturnValue(mockConfigService);
+
+      // Act
+      const mainModule = await import('../main');
+      await mainModule.bootstrap();
+
+      // Assert
+      expect(mockApp.enableCors).toHaveBeenCalledWith({
+        origin: ['*'],
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key'],
+        credentials: true,
+      });
+    });
+
+    it('should configure CORS with custom origins when ALLOWED_ORIGINS is set', async () => {
+      // Arrange
+      const allowedOrigins = 'http://localhost:3000,https://guatemala.com';
+      mockApp.get.mockReturnValue(mockConfigService);
+      setConfigValues({ ALLOWED_ORIGINS: allowedOrigins });
+
+      // Act
+      const mainModule = await import('../main');
+      await mainModule.bootstrap();
+
+      // Assert
+      expect(mockApp.enableCors).toHaveBeenCalledWith({
+        origin: ['http://localhost:3000', 'https://guatemala.com'],
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key'],
+        credentials: true,
+      });
+    });
+
+    it('should configure validation pipe', async () => {
+      // Arrange
+      mockApp.get.mockReturnValue(mockConfigService);
+
+      // Act
+      const mainModule = await import('../main');
+      await mainModule.bootstrap();
+
+      // Assert
+      expect(mockApp.useGlobalPipes).toHaveBeenCalled();
+    });
+
     it('should use default port 3001 when PORT is not configured', async () => {
       // Arrange
       mockApp.get.mockReturnValue(mockConfigService);
-      mockConfigService.get.mockReturnValue(undefined);
+      setConfigValues({ PORT: undefined });
 
       // Act
       const mainModule = await import('../main');
@@ -99,7 +183,7 @@ describe('main.ts', () => {
       // Arrange
       const configuredPort = 8080;
       mockApp.get.mockReturnValue(mockConfigService);
-      mockConfigService.get.mockReturnValue(configuredPort);
+      setConfigValues({ PORT: configuredPort });
 
       // Act
       const mainModule = await import('../main');
@@ -114,7 +198,7 @@ describe('main.ts', () => {
       // Arrange
       const port = 5000;
       mockApp.get.mockReturnValue(mockConfigService);
-      mockConfigService.get.mockReturnValue(port);
+      setConfigValues({ PORT: port });
 
       // Act
       const mainModule = await import('../main');
@@ -128,7 +212,7 @@ describe('main.ts', () => {
       // Arrange
       const port = 9000;
       mockApp.get.mockReturnValue(mockConfigService);
-      mockConfigService.get.mockReturnValue(port);
+      setConfigValues({ PORT: port });
 
       // Act
       const mainModule = await import('../main');
@@ -143,7 +227,7 @@ describe('main.ts', () => {
       // Arrange
       const portString = '7000';
       mockApp.get.mockReturnValue(mockConfigService);
-      mockConfigService.get.mockReturnValue(portString);
+      setConfigValues({ PORT: portString });
 
       // Act
       const mainModule = await import('../main');
@@ -186,7 +270,6 @@ describe('main.ts', () => {
       // Arrange
       const error = new Error('Failed to start server');
       mockApp.get.mockReturnValue(mockConfigService);
-      mockConfigService.get.mockReturnValue(3001);
       mockApp.listen.mockRejectedValue(error);
 
       // Act & Assert
@@ -205,9 +288,20 @@ describe('main.ts', () => {
         executionOrder.push('get ConfigService');
         return mockConfigService;
       });
-      mockConfigService.get.mockImplementation(() => {
-        executionOrder.push('get PORT');
-        return 3001;
+      mockConfigService.get.mockImplementation((key: string) => {
+        executionOrder.push(`get ${key}`);
+        if (key === 'PORT') return 3001;
+        if (key === 'ALLOWED_ORIGINS') return undefined;
+        return undefined;
+      });
+      mockApp.use.mockImplementation(() => {
+        executionOrder.push('use helmet');
+      });
+      mockApp.enableCors.mockImplementation(() => {
+        executionOrder.push('enableCors');
+      });
+      mockApp.useGlobalPipes.mockImplementation(() => {
+        executionOrder.push('useGlobalPipes');
       });
       mockApp.setGlobalPrefix.mockImplementation(() => {
         executionOrder.push('setGlobalPrefix');
@@ -224,9 +318,53 @@ describe('main.ts', () => {
       expect(executionOrder).toEqual([
         'get ConfigService',
         'get PORT',
+        'use helmet',
+        'get ALLOWED_ORIGINS',
+        'enableCors',
+        'useGlobalPipes',
         'setGlobalPrefix',
         'listen',
       ]);
+    });
+  });
+
+  describe('CORS configuration edge cases', () => {
+    it('should handle empty ALLOWED_ORIGINS string', async () => {
+      // Arrange
+      mockApp.get.mockReturnValue(mockConfigService);
+      setConfigValues({ ALLOWED_ORIGINS: '' });
+
+      // Act
+      const mainModule = await import('../main');
+      await mainModule.bootstrap();
+
+      // Assert
+      expect(mockApp.enableCors).toHaveBeenCalledWith({
+        origin: ['*'],
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key'],
+        credentials: true,
+      });
+    });
+
+    it('should handle ALLOWED_ORIGINS with extra spaces', async () => {
+      // Arrange
+      const allowedOrigins =
+        '  http://localhost:3000 , https://guatemala.com  ';
+      mockApp.get.mockReturnValue(mockConfigService);
+      setConfigValues({ ALLOWED_ORIGINS: allowedOrigins });
+
+      // Act
+      const mainModule = await import('../main');
+      await mainModule.bootstrap();
+
+      // Assert
+      expect(mockApp.enableCors).toHaveBeenCalledWith({
+        origin: ['http://localhost:3000', 'https://guatemala.com'],
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key'],
+        credentials: true,
+      });
     });
   });
 });

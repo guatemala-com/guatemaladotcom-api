@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { HealthCheckModule } from '../healthcheck.module';
 import { HealthCheckController } from '../infrastructure/controllers/healthcheck.controller';
-import { HealthCheckRepository } from '../infrastructure/repositories/healthcheck.repository';
+import { HealthCheckRepositoryImpl } from '../infrastructure/repositories/healthcheck.repository';
 import { HealthCheckUseCase } from '../application/use-cases/healthcheck.use-case';
 
 describe('HealthCheckModule', () => {
@@ -30,11 +30,11 @@ describe('HealthCheckModule', () => {
 
   describe('providers', () => {
     it('should provide HealthCheckRepository', () => {
-      const repository = module.get<HealthCheckRepository>(
-        HealthCheckRepository,
+      const repository = module.get<HealthCheckRepositoryImpl>(
+        HealthCheckRepositoryImpl,
       );
       expect(repository).toBeDefined();
-      expect(repository).toBeInstanceOf(HealthCheckRepository);
+      expect(repository).toBeInstanceOf(HealthCheckRepositoryImpl);
     });
 
     it('should provide HealthCheckUseCase', () => {
@@ -57,8 +57,8 @@ describe('HealthCheckModule', () => {
   describe('dependency injection', () => {
     it('should inject HealthCheckRepository into HealthCheckUseCase', () => {
       const useCase = module.get<HealthCheckUseCase>(HealthCheckUseCase);
-      const repository = module.get<HealthCheckRepository>(
-        HealthCheckRepository,
+      const repository = module.get<HealthCheckRepositoryImpl>(
+        HealthCheckRepositoryImpl,
       );
 
       expect(useCase).toBeDefined();
