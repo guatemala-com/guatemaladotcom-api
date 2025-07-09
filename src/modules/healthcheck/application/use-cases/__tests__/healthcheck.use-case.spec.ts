@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { HealthCheckUseCase } from '../../use-cases/healthcheck.use-case';
-import { HealthCheckRepository } from '../../../infrastructure/repositories/healthcheck.repository';
+import { HealthCheckRepositoryImpl } from '../../../infrastructure/repositories/healthcheck.repository';
 import {
   mockHealthData,
   mockHealthDto,
@@ -11,21 +11,21 @@ import {
 
 describe('HealthCheckUseCase', () => {
   let useCase: HealthCheckUseCase;
-  let repository: jest.Mocked<HealthCheckRepository>;
+  let repository: jest.Mocked<HealthCheckRepositoryImpl>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         HealthCheckUseCase,
         {
-          provide: HealthCheckRepository,
+          provide: HealthCheckRepositoryImpl,
           useValue: mockHealthCheckRepository,
         },
       ],
     }).compile();
 
     useCase = module.get<HealthCheckUseCase>(HealthCheckUseCase);
-    repository = module.get(HealthCheckRepository);
+    repository = module.get(HealthCheckRepositoryImpl);
   });
 
   afterEach(() => {

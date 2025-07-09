@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { IHealthCheckRepository } from '../../domain/repositories/healthcheck.repository.interface';
+import { HealthCheckRepository } from '../../domain/repositories/healthcheck.repository.interface';
 import { HealthCheck } from '../../domain/entities/healthcheck.entity';
 import { HealthStatus } from '../../domain/types/healthcheck.types';
 
 @Injectable()
-export class HealthCheckRepository implements IHealthCheckRepository {
+export class HealthCheckRepositoryImpl implements HealthCheckRepository {
   constructor(private readonly configService: ConfigService) {}
 
   getHealthStatus(): Promise<HealthCheck> {

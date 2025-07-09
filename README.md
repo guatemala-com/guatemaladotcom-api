@@ -37,7 +37,55 @@ $ pnpm install
 Create a `.env` file in the project root to set environment variables. Copy the example file:
 
 ```bash
-$ cp .env.example .env
+$ cp env.example .env
+```
+
+### Security Configuration
+
+The API includes multiple security layers for content protection:
+
+#### OAuth 2.0 Authentication
+
+- **OAuth 2.0 Client Credentials Flow**: Modern authentication standard
+- **RSA Key Authentication**: Secure JWT tokens with public/private keys
+- **Granular Scopes**: Fine-grained access control (read, write, admin)
+- **Rate Limiting**: Prevent abuse and DDoS attacks
+- **CORS Protection**: Control allowed origins
+- **Request Validation**: Validate and sanitize input data
+
+For detailed OAuth documentation, see [docs/OAUTH.md](docs/OAUTH.md).
+
+For decorator usage guide, see [docs/DECORATORS.md](docs/DECORATORS.md).
+
+For OAuth 2.0 standards and naming conventions, see [docs/STANDARDS.md](docs/STANDARDS.md).
+
+For DTOs documentation, see [docs/DTOs.md](docs/DTOs.md).
+
+#### Quick OAuth Setup
+
+1. Generate RSA keys:
+
+```bash
+$ node scripts/generate-keys.js
+```
+
+For detailed script documentation, see [scripts/README.md](scripts/README.md).
+
+2. Add the configuration to your `.env` file:
+
+```bash
+JWT_PRIVATE_KEY_PATH=./keys/private.pem
+JWT_PUBLIC_KEY_PATH=./keys/public.pem
+JWT_EXPIRES_IN=1h
+JWT_ISSUER=guatemala.com
+JWT_AUDIENCE=guatemala.com-api
+ALLOWED_ORIGINS=http://localhost:3000,https://guatemala.com
+```
+
+3. Generate client credentials:
+
+```bash
+$ curl http://localhost:3001/api/oauth/generate-client
 ```
 
 ## Database Setup
