@@ -27,3 +27,8 @@ export const mockClientWithNoScopes = new Client(
   'test-client-secret',
   [],
 );
+
+export const mockClientCredentials = {
+  client_id: 'test-client-id',
+  client_secret: 'test-client-secret',
+};
