@@ -1,4 +1,13 @@
-import { Controller, Post, Body, Get, UseGuards, Logger } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  UseGuards,
+  Logger,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { AuthService, ClientCredentials } from '../services/auth.service';
 import {
@@ -92,7 +101,8 @@ export class AuthController {
   /**
    * Endpoint to verify token
    */
-  @Get('verify')
+  @Post('verify')
+  @HttpCode(HttpStatus.OK)
   async verifyToken(
     @Body() body: TokenVerificationRequestDto,
   ): Promise<TokenVerificationResponseDto> {

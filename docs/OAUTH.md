@@ -274,9 +274,42 @@ Get access token using client credentials.
 
 Generate client credentials (development only).
 
-### GET /api/oauth/verify
+### POST /api/oauth/verify
 
 Verify token validity.
+
+**Body:**
+
+```json
+{
+  "token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+**Response (200 OK):**
+
+```json
+{
+  "valid": true,
+  "payload": {
+    "client_id": "gt_client_abc123",
+    "issuer": "guatemala.com",
+    "audience": "guatemala.com-api",
+    "issued_at": "2025-07-09T12:00:00.000Z",
+    "expires_at": "2025-07-09T13:00:00.000Z",
+    "scope": "read write"
+  }
+}
+```
+
+**Response (200 OK) - Invalid Token:**
+
+```json
+{
+  "valid": false,
+  "error": "Invalid token"
+}
+```
 
 ### GET /api/oauth/info
 
