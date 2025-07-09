@@ -19,6 +19,9 @@ import { TokenRepositoryImpl } from './infrastructure/repositories/token.reposit
 // Strategies
 import { JwtStrategy } from './infrastructure/strategies/jwt.strategy';
 
+// Guards
+import { OAuthAuthGuard } from './infrastructure/guards/oauth-auth.guard';
+
 @Module({
   imports: [
     ConfigModule,
@@ -55,7 +58,10 @@ import { JwtStrategy } from './infrastructure/strategies/jwt.strategy';
 
     // Strategies
     JwtStrategy,
+
+    // Guards
+    OAuthAuthGuard,
   ],
-  exports: [JwtStrategy],
+  exports: [JwtStrategy, OAuthAuthGuard],
 })
 export class AuthModule {}
