@@ -23,7 +23,7 @@ describe('main.ts', () => {
 
   // Helper function to set config values
   const setConfigValues = (overrides: {
-    PORT?: number | string;
+    PORT?: number | string | null;
     ALLOWED_ORIGINS?: string;
   }) => {
     mockConfigService.get.mockImplementation((key: string) => {
@@ -236,6 +236,48 @@ describe('main.ts', () => {
       // Assert
       expect(mockConfigService.get).toHaveBeenCalledWith('PORT');
       expect(mockApp.listen).toHaveBeenCalledWith(portString);
+    });
+
+    it('should use default port 3001 when PORT is null', async () => {
+      // Arrange
+      mockApp.get.mockReturnValue(mockConfigService);
+      setConfigValues({ PORT: null });
+
+      // Act
+      const mainModule = await import('../main');
+      await mainModule.bootstrap();
+
+      // Assert
+      expect(mockConfigService.get).toHaveBeenCalledWith('PORT');
+      expect(mockApp.listen).toHaveBeenCalledWith(3001);
+    });
+
+    it('should use default port 3001 when PORT is 0', async () => {
+      // Arrange
+      mockApp.get.mockReturnValue(mockConfigService);
+      setConfigValues({ PORT: 0 });
+
+      // Act
+      const mainModule = await import('../main');
+      await mainModule.bootstrap();
+
+      // Assert
+      expect(mockConfigService.get).toHaveBeenCalledWith('PORT');
+      expect(mockApp.listen).toHaveBeenCalledWith(3001);
+    });
+
+    it('should use default port 3001 when PORT is empty string', async () => {
+      // Arrange
+      mockApp.get.mockReturnValue(mockConfigService);
+      setConfigValues({ PORT: '' });
+
+      // Act
+      const mainModule = await import('../main');
+      await mainModule.bootstrap();
+
+      // Assert
+      expect(mockConfigService.get).toHaveBeenCalledWith('PORT');
+      expect(mockApp.listen).toHaveBeenCalledWith(3001);
     });
   });
 

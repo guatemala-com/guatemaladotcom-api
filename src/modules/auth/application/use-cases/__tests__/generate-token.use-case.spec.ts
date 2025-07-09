@@ -246,6 +246,29 @@ describe('GenerateTokenUseCase', () => {
       expect(mockTokenRepository.generateToken).not.toHaveBeenCalled();
     });
 
+    it('should throw BadRequestException with default message if validateAndFilterScopes throws non-Error', async () => {
+      // Arrange
+      const clientWithNonErrorException = {
+        ...mockClient,
+        validateAndFilterScopes: jest.fn().mockImplementation(() => {
+          // eslint-disable-next-line @typescript-eslint/only-throw-error
+          throw 'string error';
+        }),
+      };
+      mockClientRepository.findByClientId.mockResolvedValue(
+        clientWithNonErrorException,
+      );
+
+      // Act & Assert
+      await expect(useCase.execute(validRequest)).rejects.toThrow(
+        new BadRequestException('Invalid scopes'),
+      );
+      expect(mockClientRepository.findByClientId).toHaveBeenCalledWith(
+        'test-client-id',
+      );
+      expect(mockTokenRepository.generateToken).not.toHaveBeenCalled();
+    });
+
     it('should filter and validate scopes correctly', async () => {
       // Arrange
       const requestWithMixedScopes: GenerateTokenRequest = {
