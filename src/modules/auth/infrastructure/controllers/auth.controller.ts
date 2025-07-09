@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, Get, UseGuards, Logger } from '@nestjs/common';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { AuthService, ClientCredentials } from '../services/auth.service';
 import {
@@ -11,6 +11,8 @@ import {
 @Controller('oauth')
 @UseGuards(ThrottlerGuard)
 export class AuthController {
+  private readonly logger = new Logger(AuthController.name);
+
   constructor(private authService: AuthService) {}
 
   /**
@@ -20,25 +22,49 @@ export class AuthController {
   async getToken(
     @Body() tokenRequest: TokenRequestDto,
   ): Promise<TokenResponseDto> {
+    this.logger.log(
+      `Token request received from client: ${tokenRequest.client_id}`,
+    );
+
     // Validate that it's client_credentials flow
     if (tokenRequest.grant_type !== 'client_credentials') {
+      this.logger.warn(
+        `Unsupported grant type: ${tokenRequest.grant_type} from client: ${tokenRequest.client_id}`,
+      );
       throw new Error('Only client_credentials grant type is supported');
     }
 
     // Validate client credentials
+    this.logger.debug(
+      `Validating credentials for client: ${tokenRequest.client_id}`,
+    );
     const isValid = this.authService.validateClient(
       tokenRequest.client_id,
       tokenRequest.client_secret,
     );
 
     if (!isValid) {
+      this.logger.warn(
+        `Invalid credentials for client: ${tokenRequest.client_id}`,
+      );
       throw new Error('Invalid client credentials');
     }
 
+    this.logger.log(
+      `Credentials validated successfully for client: ${tokenRequest.client_id}`,
+    );
+
     // Generate access token
+    this.logger.debug(
+      `Generating access token for client: ${tokenRequest.client_id}, scopes: ${tokenRequest.scope || 'none'}`,
+    );
     const accessToken = await this.authService.generateAccessToken(
       tokenRequest.client_id,
       tokenRequest.scope,
+    );
+
+    this.logger.log(
+      `Access token generated successfully for client: ${tokenRequest.client_id}`,
     );
 
     return {
@@ -54,7 +80,13 @@ export class AuthController {
    */
   @Get('generate-client')
   generateClient(): ClientCredentials {
-    return this.authService.generateClientCredentials();
+    this.logger.log('Client credentials generation requested');
+
+    const credentials = this.authService.generateClientCredentials();
+
+    this.logger.log(`Client credentials generated: ${credentials.client_id}`);
+
+    return credentials;
   }
 
   /**
@@ -64,8 +96,13 @@ export class AuthController {
   async verifyToken(
     @Body() body: TokenVerificationRequestDto,
   ): Promise<TokenVerificationResponseDto> {
+    this.logger.debug('Token verification requested');
+
     try {
       const payload = await this.authService.validateToken(body.token);
+
+      this.logger.log(`Token verified successfully for client: ${payload.sub}`);
+
       return {
         valid: true,
         payload: {
@@ -77,7 +114,11 @@ export class AuthController {
           scope: payload.scope,
         },
       };
-    } catch {
+    } catch (error) {
+      this.logger.warn(
+        `Token verification failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+
       return {
         valid: false,
         error: 'Invalid token',
@@ -90,7 +131,9 @@ export class AuthController {
    */
   @Get('info')
   getOAuthInfo() {
-    return {
+    this.logger.debug('OAuth info requested');
+
+    const info = {
       issuer: 'guatemala.com',
       authorization_endpoint: '/api/oauth/authorize',
       token_endpoint: '/api/oauth/token',
@@ -98,5 +141,9 @@ export class AuthController {
       supported_scopes: ['read', 'write', 'admin'],
       token_endpoint_auth_methods: ['client_secret_post'],
     };
+
+    this.logger.log('OAuth info provided successfully');
+
+    return info;
   }
 }
