@@ -57,8 +57,7 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 /generated/prisma
 
-# scripts
-scripts/
-
-# keys
-keys/keys/
+# Generated keys (keep the keys directory structure but ignore the actual keys)
+keys/
+*.pem
+*.key

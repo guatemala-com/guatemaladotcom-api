@@ -69,6 +69,8 @@ For DTOs documentation, see [docs/DTOs.md](docs/DTOs.md).
 $ node scripts/generate-keys.js
 ```
 
+For detailed script documentation, see [scripts/README.md](scripts/README.md).
+
 2. Add the configuration to your `.env` file:
 
 ```bash
