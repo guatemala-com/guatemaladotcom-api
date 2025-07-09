@@ -2,6 +2,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, Logger } from '@nestjs/common';
 import { ThrottlerGuard } from '@nestjs/throttler';
+import { ConfigService } from '@nestjs/config';
 import { AuthController } from '../auth.controller';
 import { ValidateClientUseCase } from '../../../application/use-cases/validate-client.use-case';
 import { GenerateTokenUseCase } from '../../../application/use-cases/generate-token.use-case';
@@ -61,6 +62,25 @@ describe('AuthController', () => {
       execute: jest.fn(),
     };
 
+    const mockConfigService = {
+      get: jest
+        .fn()
+        .mockImplementation((key: string, defaultValue?: string) => {
+          switch (key) {
+            case 'JWT_SECRET':
+              return 'test-secret';
+            case 'JWT_ISSUER':
+              return 'guatemala.com';
+            case 'JWT_AUDIENCE':
+              return 'guatemala-api';
+            case 'JWT_EXPIRES_IN':
+              return '1h';
+            default:
+              return defaultValue;
+          }
+        }),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AuthController],
       providers: [
@@ -79,6 +99,10 @@ describe('AuthController', () => {
         {
           provide: GenerateClientCredentialsUseCase,
           useValue: mockGenerateClientCredentialsUseCase,
+        },
+        {
+          provide: ConfigService,
+          useValue: mockConfigService,
         },
       ],
     })
