@@ -7,6 +7,8 @@ import {
   Logger,
   HttpCode,
   HttpStatus,
+  BadRequestException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { AuthService, ClientCredentials } from '../services/auth.service';
@@ -40,7 +42,9 @@ export class AuthController {
       this.logger.warn(
         `Unsupported grant type: ${tokenRequest.grant_type} from client: ${tokenRequest.client_id}`,
       );
-      throw new Error('Only client_credentials grant type is supported');
+      throw new BadRequestException(
+        'Only client_credentials grant type is supported',
+      );
     }
 
     // Validate client credentials
@@ -56,32 +60,47 @@ export class AuthController {
       this.logger.warn(
         `Invalid credentials for client: ${tokenRequest.client_id}`,
       );
-      throw new Error('Invalid client credentials');
+      throw new UnauthorizedException('Invalid client credentials');
     }
 
     this.logger.log(
       `Credentials validated successfully for client: ${tokenRequest.client_id}`,
     );
 
-    // Generate access token
+    // Generate access token with scope validation
     this.logger.debug(
-      `Generating access token for client: ${tokenRequest.client_id}, scopes: ${tokenRequest.scope || 'none'}`,
-    );
-    const accessToken = await this.authService.generateAccessToken(
-      tokenRequest.client_id,
-      tokenRequest.scope,
+      `Generating access token for client: ${tokenRequest.client_id}, requested scopes: ${tokenRequest.scope || 'none'}`,
     );
 
-    this.logger.log(
-      `Access token generated successfully for client: ${tokenRequest.client_id}`,
-    );
+    try {
+      const accessToken = await this.authService.generateAccessToken(
+        tokenRequest.client_id,
+        tokenRequest.scope,
+      );
 
-    return {
-      access_token: accessToken,
-      token_type: 'Bearer',
-      expires_in: 3600, // 1 hour
-      scope: tokenRequest.scope,
-    };
+      this.logger.log(
+        `Access token generated successfully for client: ${tokenRequest.client_id}`,
+      );
+
+      return {
+        access_token: accessToken,
+        token_type: 'Bearer',
+        expires_in: 3600, // 1 hour
+        scope: tokenRequest.scope,
+      };
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        this.logger.warn(
+          `Scope validation failed for client ${tokenRequest.client_id}: ${error.message}`,
+        );
+        throw error;
+      }
+
+      this.logger.error(
+        `Error generating token for client ${tokenRequest.client_id}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+      throw new BadRequestException('Error generating access token');
+    }
   }
 
   /**
