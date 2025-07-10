@@ -22,6 +22,7 @@ export class TokenResponseDto {
   access_token: string;
   token_type: string;
   expires_in: number;
+  refresh_token?: string;
   scope?: string;
 }
 
@@ -42,4 +43,26 @@ export class TokenVerificationResponseDto {
     scope?: string;
   };
   error?: string;
+}
+
+export class RefreshTokenRequestDto {
+  @IsString()
+  @IsNotEmpty()
+  grant_type: string;
+
+  @IsString()
+  @IsNotEmpty()
+  refresh_token: string;
+
+  @IsString()
+  @IsOptional()
+  scope?: string;
+}
+
+export class RefreshTokenResponseDto {
+  access_token: string;
+  token_type: string;
+  expires_in: number;
+  refresh_token?: string;
+  scope?: string;
 }

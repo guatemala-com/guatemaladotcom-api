@@ -26,6 +26,142 @@ This project is part of a comprehensive migration from a traditional WordPress w
 - **Architecture**: Clean Architecture
 - **Pattern**: Use Cases
 
+## Environment Variables
+
+### OAuth RSA Keys Configuration
+
+The API now uses RSA keys for JWT signing instead of symmetric secrets for enhanced security.
+
+```bash
+# RSA Key Paths (Optional - defaults to keys/ directory)
+JWT_PRIVATE_KEY_PATH=keys/private.pem
+JWT_PUBLIC_KEY_PATH=keys/public.pem
+
+# JWT Configuration
+JWT_EXPIRES_IN=1h
+JWT_ISSUER=guatemala.com
+JWT_AUDIENCE=guatemala-api
+
+# Refresh Token Configuration
+REFRESH_TOKEN_ENABLED=true
+REFRESH_TOKEN_EXPIRES_IN=604800  # 7 days (in seconds)
+REFRESH_TOKEN_ROTATION=true      # Auto-rotate refresh tokens
+```
+
+### Generating RSA Keys
+
+Run the following command to generate RSA key pairs:
+
+```bash
+node scripts/generate-keys.js
+```
+
+This will create:
+
+- `keys/private.pem` - Used by the server to sign tokens
+- `keys/public.pem` - Used to verify tokens (can be shared with clients)
+
+### Security Benefits
+
+- **Asymmetric Authentication**: Server signs with private key, clients verify with public key
+- **Enhanced Security**: Even if client is compromised, they cannot generate valid tokens
+- **Key Rotation**: Keys can be rotated without sharing new secrets with all clients
+
+### Refresh Token Support
+
+The API now supports refresh tokens for improved user experience:
+
+- **Short-lived Access Tokens**: Access tokens expire in 1 hour
+- **Long-lived Refresh Tokens**: Refresh tokens expire in 7 days (configurable)
+- **Token Rotation**: Refresh tokens are automatically rotated for enhanced security
+- **Scope Management**: Refresh tokens can request reduced scopes
+
+#### Benefits of Refresh Tokens
+
+- **Better UX**: Users don't need to re-authenticate frequently
+- **Enhanced Security**: Short-lived access tokens reduce risk window
+- **Automatic Rotation**: Old refresh tokens are invalidated when used
+- **Scope Flexibility**: Request different scopes during refresh
+
+### Client Certificate Authentication (Optional)
+
+The API supports optional client certificate authentication for enhanced security:
+
+```bash
+# OAuth Client Configuration with Certificate Support
+OAUTH_CLIENTS='[
+  {
+    "clientId": "webapp-client",
+    "clientSecret": "your-secret-here",
+    "allowedScopes": ["read", "write"],
+    "requiresCertificate": false
+  },
+  {
+    "clientId": "secure-service",
+    "clientSecret": "secure-secret",
+    "allowedScopes": ["read", "write", "admin"],
+    "requiresCertificate": true,
+    "certificateFingerprint": "A1B2C3D4E5F6..."
+  }
+]'
+```
+
+#### Certificate Authentication Types
+
+1. **Web App (No Certificate)**: Traditional client_id/client_secret authentication
+2. **Server-to-Server (Optional Certificate)**: Certificate adds extra security layer
+3. **High-Security Client (Required Certificate)**: Certificate is mandatory
+
+#### How Your Web App Authenticates
+
+```typescript
+// Your web app - no certificate needed
+const response = await fetch('/api/oauth/token', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    grant_type: 'client_credentials',
+    client_id: 'webapp-client',
+    client_secret: 'your-secret-here',
+    scope: 'read write',
+  }),
+});
+
+// Using the refresh token to get new access token
+const refreshResponse = await fetch('/api/oauth/refresh', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    grant_type: 'refresh_token',
+    refresh_token: 'your-refresh-token-here',
+    scope: 'read write', // Optional: request specific scopes
+  }),
+});
+
+const { access_token, refresh_token } = await refreshResponse.json();
+```
+
+#### High-Security Client with Certificate
+
+```typescript
+// Server-to-server with certificate
+const httpsAgent = new https.Agent({
+  cert: fs.readFileSync('client-cert.pem'),
+  key: fs.readFileSync('client-key.pem'),
+});
+
+const response = await fetch('/api/oauth/token', {
+  method: 'POST',
+  agent: httpsAgent,
+  body: JSON.stringify({
+    grant_type: 'client_credentials',
+    client_id: 'secure-service',
+    client_secret: 'secure-secret',
+    scope: 'admin',
+  }),
+});
+```
+
 ## Project Setup
 
 ```bash

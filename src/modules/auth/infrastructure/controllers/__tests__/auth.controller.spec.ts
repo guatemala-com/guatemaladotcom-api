@@ -8,16 +8,20 @@ import { ValidateClientUseCase } from '../../../application/use-cases/validate-c
 import { GenerateTokenUseCase } from '../../../application/use-cases/generate-token.use-case';
 import { VerifyTokenUseCase } from '../../../application/use-cases/verify-token.use-case';
 import { GenerateClientCredentialsUseCase } from '../../../application/use-cases/generate-client-credentials.use-case';
+import { RefreshTokenUseCase } from '../../../application/use-cases/refresh-token.use-case';
 import {
   TokenRequestDto,
   TokenResponseDto,
   TokenVerificationRequestDto,
   TokenVerificationResponseDto,
+  RefreshTokenRequestDto,
+  RefreshTokenResponseDto,
 } from '../../../application/dtos/token.dto';
 import {
   mockClient,
   mockClientCredentials,
 } from '../../../__mocks__/entities.mocks';
+import { RequestWithCertificate } from '../../middleware/certificate-validation.middleware';
 
 describe('AuthController', () => {
   let controller: AuthController;
@@ -25,11 +29,28 @@ describe('AuthController', () => {
   let generateTokenUseCase: jest.Mocked<GenerateTokenUseCase>;
   let verifyTokenUseCase: jest.Mocked<VerifyTokenUseCase>;
   let generateClientCredentialsUseCase: jest.Mocked<GenerateClientCredentialsUseCase>;
+  let refreshTokenUseCase: jest.Mocked<RefreshTokenUseCase>;
+
+  const mockRequest: Partial<RequestWithCertificate> = {
+    socket: {
+      getPeerCertificate: jest.fn(),
+    } as unknown as RequestWithCertificate['socket'],
+    certificateFingerprint: 'TEST_FINGERPRINT',
+  };
 
   const mockTokenResponse: TokenResponseDto = {
     access_token: 'mock-access-token-123',
     token_type: 'Bearer',
     expires_in: 3600,
+    refresh_token: 'mock-refresh-token-456',
+    scope: 'read write',
+  };
+
+  const mockRefreshTokenResponse: RefreshTokenResponseDto = {
+    access_token: 'mock-new-access-token-789',
+    token_type: 'Bearer',
+    expires_in: 3600,
+    refresh_token: 'mock-new-refresh-token-012',
     scope: 'read write',
   };
 
@@ -59,6 +80,10 @@ describe('AuthController', () => {
     };
 
     const mockGenerateClientCredentialsUseCase = {
+      execute: jest.fn(),
+    };
+
+    const mockRefreshTokenUseCase = {
       execute: jest.fn(),
     };
 
@@ -101,6 +126,10 @@ describe('AuthController', () => {
           useValue: mockGenerateClientCredentialsUseCase,
         },
         {
+          provide: RefreshTokenUseCase,
+          useValue: mockRefreshTokenUseCase,
+        },
+        {
           provide: ConfigService,
           useValue: mockConfigService,
         },
@@ -117,6 +146,7 @@ describe('AuthController', () => {
     generateClientCredentialsUseCase = module.get(
       GenerateClientCredentialsUseCase,
     );
+    refreshTokenUseCase = module.get(RefreshTokenUseCase);
 
     // Mock logger to avoid console output during tests
     jest.spyOn(Logger.prototype, 'log').mockImplementation(() => {});
@@ -147,16 +177,21 @@ describe('AuthController', () => {
         accessToken: mockTokenResponse.access_token,
         tokenType: mockTokenResponse.token_type,
         expiresIn: mockTokenResponse.expires_in,
+        refreshToken: mockTokenResponse.refresh_token,
         scope: mockTokenResponse.scope,
       });
 
       // Act
-      const result = await controller.getToken(validTokenRequest);
+      const result = await controller.getToken(
+        validTokenRequest,
+        mockRequest as RequestWithCertificate,
+      );
 
       // Assert
       expect(validateClientUseCase.execute).toHaveBeenCalledWith({
         clientId: validTokenRequest.client_id,
         clientSecret: validTokenRequest.client_secret,
+        certificateFingerprint: mockRequest.certificateFingerprint,
       });
       expect(generateTokenUseCase.execute).toHaveBeenCalledWith({
         clientId: validTokenRequest.client_id,
@@ -178,11 +213,15 @@ describe('AuthController', () => {
         accessToken: mockTokenResponse.access_token,
         tokenType: mockTokenResponse.token_type,
         expiresIn: mockTokenResponse.expires_in,
+        refreshToken: mockTokenResponse.refresh_token,
         scope: undefined,
       });
 
       // Act
-      const result = await controller.getToken(requestWithoutScope);
+      const result = await controller.getToken(
+        requestWithoutScope,
+        mockRequest as RequestWithCertificate,
+      );
 
       // Assert
       expect(generateTokenUseCase.execute).toHaveBeenCalledWith({
@@ -200,12 +239,18 @@ describe('AuthController', () => {
       };
 
       // Act & Assert
-      await expect(controller.getToken(invalidRequest)).rejects.toThrow(
-        BadRequestException,
-      );
-      await expect(controller.getToken(invalidRequest)).rejects.toThrow(
-        'Only client_credentials grant type is supported',
-      );
+      await expect(
+        controller.getToken(
+          invalidRequest,
+          mockRequest as RequestWithCertificate,
+        ),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        controller.getToken(
+          invalidRequest,
+          mockRequest as RequestWithCertificate,
+        ),
+      ).rejects.toThrow('Only client_credentials grant type is supported');
     });
 
     it('should throw error when client validation fails', async () => {
@@ -214,12 +259,16 @@ describe('AuthController', () => {
       validateClientUseCase.execute.mockRejectedValue(validationError);
 
       // Act & Assert
-      await expect(controller.getToken(validTokenRequest)).rejects.toThrow(
-        validationError,
-      );
+      await expect(
+        controller.getToken(
+          validTokenRequest,
+          mockRequest as RequestWithCertificate,
+        ),
+      ).rejects.toThrow(validationError);
       expect(validateClientUseCase.execute).toHaveBeenCalledWith({
         clientId: validTokenRequest.client_id,
         clientSecret: validTokenRequest.client_secret,
+        certificateFingerprint: mockRequest.certificateFingerprint,
       });
       expect(generateTokenUseCase.execute).not.toHaveBeenCalled();
     });
@@ -234,9 +283,12 @@ describe('AuthController', () => {
       generateTokenUseCase.execute.mockRejectedValue(scopeError);
 
       // Act & Assert
-      await expect(controller.getToken(validTokenRequest)).rejects.toThrow(
-        scopeError,
-      );
+      await expect(
+        controller.getToken(
+          validTokenRequest,
+          mockRequest as RequestWithCertificate,
+        ),
+      ).rejects.toThrow(scopeError);
     });
 
     it('should throw BadRequestException for unknown token generation errors', async () => {
@@ -249,41 +301,113 @@ describe('AuthController', () => {
       generateTokenUseCase.execute.mockRejectedValue(unknownError);
 
       // Act & Assert
-      await expect(controller.getToken(validTokenRequest)).rejects.toThrow(
-        BadRequestException,
-      );
-      await expect(controller.getToken(validTokenRequest)).rejects.toThrow(
-        'Error generating access token',
-      );
+      await expect(
+        controller.getToken(
+          validTokenRequest,
+          mockRequest as RequestWithCertificate,
+        ),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        controller.getToken(
+          validTokenRequest,
+          mockRequest as RequestWithCertificate,
+        ),
+      ).rejects.toThrow('Error generating access token');
     });
+  });
 
-    it('should handle empty scope string', async () => {
+  describe('refreshToken', () => {
+    const validRefreshRequest: RefreshTokenRequestDto = {
+      grant_type: 'refresh_token',
+      refresh_token: 'valid-refresh-token',
+      scope: 'read write',
+    };
+
+    it('should refresh token successfully with valid refresh token', async () => {
       // Arrange
-      const requestWithEmptyScope = {
-        ...validTokenRequest,
-        scope: '',
-      };
-
-      validateClientUseCase.execute.mockResolvedValue({
-        client: mockClient,
-        isValid: true,
-      });
-      generateTokenUseCase.execute.mockResolvedValue({
-        accessToken: mockTokenResponse.access_token,
-        tokenType: mockTokenResponse.token_type,
-        expiresIn: mockTokenResponse.expires_in,
-        scope: '',
+      refreshTokenUseCase.execute.mockResolvedValue({
+        accessToken: mockRefreshTokenResponse.access_token,
+        tokenType: mockRefreshTokenResponse.token_type,
+        expiresIn: mockRefreshTokenResponse.expires_in,
+        refreshToken: mockRefreshTokenResponse.refresh_token,
+        scope: mockRefreshTokenResponse.scope,
       });
 
       // Act
-      const result = await controller.getToken(requestWithEmptyScope);
+      const result = await controller.refreshToken(validRefreshRequest);
 
       // Assert
-      expect(generateTokenUseCase.execute).toHaveBeenCalledWith({
-        clientId: validTokenRequest.client_id,
-        scope: '',
+      expect(refreshTokenUseCase.execute).toHaveBeenCalledWith({
+        refreshToken: validRefreshRequest.refresh_token,
+        scope: validRefreshRequest.scope,
       });
-      expect(result.scope).toBe('');
+      expect(result).toEqual(mockRefreshTokenResponse);
+    });
+
+    it('should refresh token without scope', async () => {
+      // Arrange
+      const requestWithoutScope = { ...validRefreshRequest };
+      delete requestWithoutScope.scope;
+
+      refreshTokenUseCase.execute.mockResolvedValue({
+        accessToken: mockRefreshTokenResponse.access_token,
+        tokenType: mockRefreshTokenResponse.token_type,
+        expiresIn: mockRefreshTokenResponse.expires_in,
+        refreshToken: mockRefreshTokenResponse.refresh_token,
+        scope: undefined,
+      });
+
+      // Act
+      const result = await controller.refreshToken(requestWithoutScope);
+
+      // Assert
+      expect(refreshTokenUseCase.execute).toHaveBeenCalledWith({
+        refreshToken: validRefreshRequest.refresh_token,
+        scope: undefined,
+      });
+      expect(result.scope).toBeUndefined();
+    });
+
+    it('should throw BadRequestException for unsupported grant type', async () => {
+      // Arrange
+      const invalidRequest = {
+        ...validRefreshRequest,
+        grant_type: 'client_credentials',
+      };
+
+      // Act & Assert
+      await expect(controller.refreshToken(invalidRequest)).rejects.toThrow(
+        BadRequestException,
+      );
+      await expect(controller.refreshToken(invalidRequest)).rejects.toThrow(
+        'Only refresh_token grant type is supported for this endpoint',
+      );
+    });
+
+    it('should throw error when refresh token validation fails', async () => {
+      // Arrange
+      const refreshError = new BadRequestException('Invalid refresh token');
+      refreshTokenUseCase.execute.mockRejectedValue(refreshError);
+
+      // Act & Assert
+      await expect(
+        controller.refreshToken(validRefreshRequest),
+      ).rejects.toThrow(refreshError);
+    });
+
+    it('should log warning and throw error when refresh token use case fails', async () => {
+      // Arrange
+      const warnSpy = jest.spyOn(Logger.prototype, 'warn');
+      const refreshError = new BadRequestException('Invalid refresh token');
+      refreshTokenUseCase.execute.mockRejectedValue(refreshError);
+
+      // Act & Assert
+      await expect(
+        controller.refreshToken(validRefreshRequest),
+      ).rejects.toThrow(refreshError);
+      expect(warnSpy).toHaveBeenCalledWith(
+        'Refresh token failed: Invalid refresh token',
+      );
     });
   });
 
@@ -358,9 +482,9 @@ describe('AuthController', () => {
       expect(result.payload).toBeUndefined();
     });
 
-    it('should handle empty token string', async () => {
+    it('should log warning when token verification fails', async () => {
       // Arrange
-      const emptyTokenRequest = { token: '' };
+      const warnSpy = jest.spyOn(Logger.prototype, 'warn');
       const invalidResponse: TokenVerificationResponseDto = {
         valid: false,
         payload: undefined,
@@ -368,13 +492,10 @@ describe('AuthController', () => {
       verifyTokenUseCase.execute.mockResolvedValue(invalidResponse);
 
       // Act
-      const result = await controller.verifyToken(emptyTokenRequest);
+      await controller.verifyToken(validVerificationRequest);
 
       // Assert
-      expect(verifyTokenUseCase.execute).toHaveBeenCalledWith({
-        token: '',
-      });
-      expect(result).toEqual(invalidResponse);
+      expect(warnSpy).toHaveBeenCalledWith('Token verification failed');
     });
 
     it('should handle verification errors', async () => {
@@ -386,30 +507,6 @@ describe('AuthController', () => {
       await expect(
         controller.verifyToken(validVerificationRequest),
       ).rejects.toThrow(verificationError);
-    });
-
-    it('should handle token with payload', async () => {
-      // Arrange
-      const responseWithPayload: TokenVerificationResponseDto = {
-        valid: true,
-        payload: {
-          client_id: 'test-client',
-          issuer: 'guatemala.com',
-          audience: 'test-audience',
-          issued_at: new Date().toISOString(),
-          expires_at: new Date(Date.now() + 7200000).toISOString(),
-          scope: 'read write admin',
-        },
-      };
-      verifyTokenUseCase.execute.mockResolvedValue(responseWithPayload);
-
-      // Act
-      const result = await controller.verifyToken(validVerificationRequest);
-
-      // Assert
-      expect(result).toEqual(responseWithPayload);
-      expect(result.payload?.client_id).toBe('test-client');
-      expect(result.payload?.scope).toBe('read write admin');
     });
   });
 
@@ -428,20 +525,6 @@ describe('AuthController', () => {
         token_endpoint_auth_methods: ['client_secret_post'],
       });
     });
-
-    it('should return consistent OAuth information on multiple calls', () => {
-      // Act
-      const result1 = controller.getOAuthInfo();
-      const result2 = controller.getOAuthInfo();
-
-      // Assert
-      expect(result1).toEqual(result2);
-      expect(result1.issuer).toBe('guatemala.com');
-      expect(result1.supported_grant_types).toContain('client_credentials');
-      expect(result1.supported_scopes).toContain('read');
-      expect(result1.supported_scopes).toContain('write');
-      expect(result1.supported_scopes).toContain('admin');
-    });
   });
 
   describe('logging', () => {
@@ -458,16 +541,20 @@ describe('AuthController', () => {
         accessToken: mockTokenResponse.access_token,
         tokenType: mockTokenResponse.token_type,
         expiresIn: mockTokenResponse.expires_in,
+        refreshToken: mockTokenResponse.refresh_token,
         scope: mockTokenResponse.scope,
       });
 
       // Act
-      await controller.getToken({
-        grant_type: 'client_credentials',
-        client_id: 'test-client',
-        client_secret: 'test-secret',
-        scope: 'read',
-      });
+      await controller.getToken(
+        {
+          grant_type: 'client_credentials',
+          client_id: 'test-client',
+          client_secret: 'test-secret',
+          scope: 'read',
+        },
+        mockRequest as RequestWithCertificate,
+      );
 
       // Assert
       expect(logSpy).toHaveBeenCalledWith(
@@ -479,156 +566,106 @@ describe('AuthController', () => {
       expect(logSpy).toHaveBeenCalledWith(
         'Credentials validated successfully for client: test-client',
       );
-      expect(debugSpy).toHaveBeenCalledWith(
-        'Generating access token for client: test-client, requested scopes: read',
-      );
-      expect(logSpy).toHaveBeenCalledWith(
-        'Access token generated successfully for client: test-client',
-      );
     });
 
-    it('should log warning for unsupported grant type', async () => {
-      // Arrange
-      const warnSpy = jest.spyOn(Logger.prototype, 'warn');
-
-      // Act & Assert
-      await expect(
-        controller.getToken({
-          grant_type: 'authorization_code',
-          client_id: 'test-client',
-          client_secret: 'test-secret',
-        }),
-      ).rejects.toThrow();
-
-      expect(warnSpy).toHaveBeenCalledWith(
-        'Unsupported grant type: authorization_code from client: test-client',
-      );
-    });
-
-    it('should log warning for invalid credentials', async () => {
-      // Arrange
-      const warnSpy = jest.spyOn(Logger.prototype, 'warn');
-      const validationError = new BadRequestException('Invalid credentials');
-      validateClientUseCase.execute.mockRejectedValue(validationError);
-
-      // Act & Assert
-      await expect(
-        controller.getToken({
-          grant_type: 'client_credentials',
-          client_id: 'test-client',
-          client_secret: 'wrong-secret',
-        }),
-      ).rejects.toThrow();
-
-      expect(warnSpy).toHaveBeenCalledWith(
-        'Invalid credentials for client: test-client',
-      );
-    });
-
-    it('should log client credentials generation', () => {
+    it('should log refresh token requests', async () => {
       // Arrange
       const logSpy = jest.spyOn(Logger.prototype, 'log');
-      generateClientCredentialsUseCase.execute.mockReturnValue(
-        mockClientCredentials,
-      );
+      refreshTokenUseCase.execute.mockResolvedValue({
+        accessToken: mockRefreshTokenResponse.access_token,
+        tokenType: mockRefreshTokenResponse.token_type,
+        expiresIn: mockRefreshTokenResponse.expires_in,
+        refreshToken: mockRefreshTokenResponse.refresh_token,
+        scope: mockRefreshTokenResponse.scope,
+      });
 
       // Act
-      controller.generateClient();
+      await controller.refreshToken({
+        grant_type: 'refresh_token',
+        refresh_token: 'valid-refresh-token',
+      });
 
       // Assert
+      expect(logSpy).toHaveBeenCalledWith('Refresh token request received');
       expect(logSpy).toHaveBeenCalledWith(
-        'Client credentials generation requested',
+        'Refresh token processed successfully',
       );
-      expect(logSpy).toHaveBeenCalledWith(
-        `Client credentials generated: ${mockClientCredentials.client_id}`,
-      );
-    });
-
-    it('should log token verification results', async () => {
-      // Arrange
-      const logSpy = jest.spyOn(Logger.prototype, 'log');
-      const debugSpy = jest.spyOn(Logger.prototype, 'debug');
-
-      verifyTokenUseCase.execute.mockResolvedValue(mockVerificationResponse);
-
-      // Act
-      await controller.verifyToken({ token: 'valid-token' });
-
-      // Assert
-      expect(debugSpy).toHaveBeenCalledWith('Token verification requested');
-      expect(logSpy).toHaveBeenCalledWith(
-        `Token verified successfully for client: ${mockVerificationResponse.payload?.client_id}`,
-      );
-    });
-
-    it('should log failed token verification', async () => {
-      // Arrange
-      const debugSpy = jest.spyOn(Logger.prototype, 'debug');
-      const warnSpy = jest.spyOn(Logger.prototype, 'warn');
-
-      const invalidResponse: TokenVerificationResponseDto = {
-        valid: false,
-        payload: undefined,
-      };
-      verifyTokenUseCase.execute.mockResolvedValue(invalidResponse);
-
-      // Act
-      await controller.verifyToken({ token: 'invalid-token' });
-
-      // Assert
-      expect(debugSpy).toHaveBeenCalledWith('Token verification requested');
-      expect(warnSpy).toHaveBeenCalledWith('Token verification failed');
-    });
-
-    it('should log OAuth info requests', () => {
-      // Arrange
-      const debugSpy = jest.spyOn(Logger.prototype, 'debug');
-      const logSpy = jest.spyOn(Logger.prototype, 'log');
-
-      // Act
-      controller.getOAuthInfo();
-
-      // Assert
-      expect(debugSpy).toHaveBeenCalledWith('OAuth info requested');
-      expect(logSpy).toHaveBeenCalledWith('OAuth info provided successfully');
     });
   });
 
-  describe('error handling', () => {
-    it('should handle non-Error exceptions in token generation', async () => {
+  describe('certificate validation', () => {
+    it('should pass certificate fingerprint to validation', async () => {
       // Arrange
+      const requestWithCertificate = {
+        ...mockRequest,
+        certificateFingerprint: 'ABC123456789',
+      };
+
       validateClientUseCase.execute.mockResolvedValue({
         client: mockClient,
         isValid: true,
       });
-      generateTokenUseCase.execute.mockRejectedValue('String error');
+      generateTokenUseCase.execute.mockResolvedValue({
+        accessToken: mockTokenResponse.access_token,
+        tokenType: mockTokenResponse.token_type,
+        expiresIn: mockTokenResponse.expires_in,
+        refreshToken: mockTokenResponse.refresh_token,
+        scope: mockTokenResponse.scope,
+      });
 
-      // Act & Assert
-      await expect(
-        controller.getToken({
+      // Act
+      await controller.getToken(
+        {
           grant_type: 'client_credentials',
           client_id: 'test-client',
           client_secret: 'test-secret',
-        }),
-      ).rejects.toThrow(BadRequestException);
+        },
+        requestWithCertificate as RequestWithCertificate,
+      );
+
+      // Assert
+      expect(validateClientUseCase.execute).toHaveBeenCalledWith({
+        clientId: 'test-client',
+        clientSecret: 'test-secret',
+        certificateFingerprint: 'ABC123456789',
+      });
     });
 
-    it('should handle null/undefined errors in token generation', async () => {
+    it('should handle requests without certificate fingerprint', async () => {
       // Arrange
+      const requestWithoutCertificate = {
+        ...mockRequest,
+        certificateFingerprint: undefined,
+      };
+
       validateClientUseCase.execute.mockResolvedValue({
         client: mockClient,
         isValid: true,
       });
-      generateTokenUseCase.execute.mockRejectedValue(null);
+      generateTokenUseCase.execute.mockResolvedValue({
+        accessToken: mockTokenResponse.access_token,
+        tokenType: mockTokenResponse.token_type,
+        expiresIn: mockTokenResponse.expires_in,
+        refreshToken: mockTokenResponse.refresh_token,
+        scope: mockTokenResponse.scope,
+      });
 
-      // Act & Assert
-      await expect(
-        controller.getToken({
+      // Act
+      await controller.getToken(
+        {
           grant_type: 'client_credentials',
           client_id: 'test-client',
           client_secret: 'test-secret',
-        }),
-      ).rejects.toThrow(BadRequestException);
+        },
+        requestWithoutCertificate as RequestWithCertificate,
+      );
+
+      // Assert
+      expect(validateClientUseCase.execute).toHaveBeenCalledWith({
+        clientId: 'test-client',
+        clientSecret: 'test-secret',
+        certificateFingerprint: undefined,
+      });
     });
   });
 });

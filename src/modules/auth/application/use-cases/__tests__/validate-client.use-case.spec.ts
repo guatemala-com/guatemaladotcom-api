@@ -84,9 +84,36 @@ describe('ValidateClientUseCase', () => {
       );
     });
 
+    it('should throw UnauthorizedException when certificate validation fails', async () => {
+      // Arrange
+      const requestWithCertificate: ValidateClientRequest = {
+        clientId: 'test-client-id',
+        clientSecret: 'test-client-secret',
+        certificateFingerprint: 'invalid-fingerprint',
+      };
+
+      const clientWithInvalidCertificate = mockClient;
+      jest
+        .spyOn(clientWithInvalidCertificate, 'validateCertificate')
+        .mockReturnValue(false);
+      mockClientRepository.findByClientId.mockResolvedValue(
+        clientWithInvalidCertificate,
+      );
+
+      // Act & Assert
+      await expect(useCase.execute(requestWithCertificate)).rejects.toThrow(
+        new UnauthorizedException('Invalid client certificate'),
+      );
+      expect(mockClientRepository.findByClientId).toHaveBeenCalledWith(
+        'test-client-id',
+      );
+    });
+
     it('should return correct response structure', async () => {
       // Arrange
       mockClientRepository.findByClientId.mockResolvedValue(mockClient);
+      // Reset any previous mocks on the client
+      jest.spyOn(mockClient, 'validateCertificate').mockReturnValue(true);
 
       // Act
       const result = await useCase.execute(validRequest);

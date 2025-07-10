@@ -53,6 +53,9 @@ jobs:
       - name: Check formatting
         run: pnpm format:check
 
+      - name: Create private and public keys
+        run: pnpm generate:keys
+
       - name: Run unit tests with coverage threshold
         run: pnpm test:ci
 

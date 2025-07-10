@@ -5,6 +5,7 @@ import { Client } from '../../domain/entities/client.entity';
 export interface ValidateClientRequest {
   clientId: string;
   clientSecret: string;
+  certificateFingerprint?: string; // Optional certificate fingerprint
 }
 
 export interface ValidateClientResponse {
@@ -28,7 +29,7 @@ export class ValidateClientUseCase {
   async execute(
     request: ValidateClientRequest,
   ): Promise<ValidateClientResponse> {
-    const { clientId, clientSecret } = request;
+    const { clientId, clientSecret, certificateFingerprint } = request;
 
     // Find the client
     const client = await this.clientRepository.findByClientId(clientId);
@@ -42,6 +43,15 @@ export class ValidateClientUseCase {
 
     if (!isValid) {
       throw new UnauthorizedException('Invalid client credentials');
+    }
+
+    // Validate certificate if required
+    const isCertificateValid = client.validateCertificate(
+      certificateFingerprint,
+    );
+
+    if (!isCertificateValid) {
+      throw new UnauthorizedException('Invalid client certificate');
     }
 
     return {
