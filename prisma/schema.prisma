@@ -15,50 +15,72 @@ datasource db {
 
 // WordPress Posts - Contenido principal del sitio
 model AprPosts {
-  id              BigInt        @id @default(autoincrement()) @map("ID")
-  postAuthor      BigInt        @default(0)
-  postDate        DateTime?
-  postDateGmt     DateTime?
-  postContent     String        @db.LongText
-  postTitle       String        @db.Text
-  postExcerpt     String        @db.Text
-  postStatus      String        @default("publish") @db.VarChar(20)
-  postName        String        @db.VarChar(200)  // slug
-  postModified    DateTime?
-  postModifiedGmt DateTime?
-  postParent      BigInt        @default(0)
-  guid            String        @db.VarChar(255)
-  postType        String        @default("post") @db.VarChar(20)
-  commentCount    BigInt        @default(0)
+  id                  BigInt        @id @default(autoincrement()) @map("ID")
+  postAuthor          BigInt        @default(0) @map("post_author")
+  postDate            DateTime      @default(dbgenerated("'0000-00-00 00:00:00'")) @map("post_date")
+  postDateGmt         DateTime      @default(dbgenerated("'0000-00-00 00:00:00'")) @map("post_date_gmt")
+  postContent         String        @db.LongText @map("post_content")
+  postTitle           String        @db.Text @map("post_title")
+  postExcerpt         String        @db.Text @map("post_excerpt")
+  postStatus          String        @default("publish") @db.VarChar(20) @map("post_status")
+  commentStatus       String        @default("open") @db.VarChar(20) @map("comment_status")
+  pingStatus          String        @default("open") @db.VarChar(20) @map("ping_status")
+  postPassword        String        @default("") @db.VarChar(255) @map("post_password")
+  postName            String        @default("") @db.VarChar(200) @map("post_name")
+  toPing              String        @db.Text @map("to_ping")
+  pinged              String        @db.Text @map("pinged")
+  postModified        DateTime      @default(dbgenerated("'0000-00-00 00:00:00'")) @map("post_modified")
+  postModifiedGmt     DateTime      @default(dbgenerated("'0000-00-00 00:00:00'")) @map("post_modified_gmt")
+  postContentFiltered String        @db.LongText @map("post_content_filtered")
+  postParent          BigInt        @default(0) @map("post_parent")
+  guid                String        @default("") @db.VarChar(255)
+  menuOrder           Int           @default(0) @map("menu_order")
+  postType            String        @default("post") @db.VarChar(20) @map("post_type")
+  postMimeType        String        @default("") @db.VarChar(100) @map("post_mime_type")
+  commentCount        BigInt        @default(0) @map("comment_count")
   
   // Relations
-  metas           AprPostmeta[]
+  metas               AprPostmeta[]
   
+  @@index([postName], map: "post_name")
+  @@index([postType, postStatus, postDate, id], map: "type_status_date")
+  @@index([postParent], map: "post_parent")
+  @@index([postAuthor], map: "post_author")
   @@map("apr_posts")
 }
 
 // WordPress Post Meta - Metadatos, custom fields, SEO
 model AprPostmeta {
-  metaId    BigInt    @id @default(autoincrement())
-  postId    BigInt
-  metaKey   String?   @db.VarChar(255)
-  metaValue String?   @db.LongText
+  metaId    BigInt    @id @default(autoincrement()) @map("meta_id")
+  postId    BigInt    @default(0) @map("post_id")
+  metaKey   String?   @db.VarChar(255) @map("meta_key")
+  metaValue String?   @db.LongText @map("meta_value")
   
   // Relations
   post      AprPosts? @relation(fields: [postId], references: [id])
   
+  @@index([postId], map: "post_id")
+  @@index([metaKey], map: "meta_key")
   @@map("apr_postmeta")
 }
 
-// WordPress Users - Información de autores
-model AprUsers {
-  id              BigInt    @id @default(autoincrement()) @map("ID")
-  userLogin       String    @db.VarChar(60)
-  userNicename    String    @db.VarChar(50)
-  userEmail       String    @db.VarChar(100)
-  userUrl         String    @db.VarChar(100)
-  userRegistered  DateTime?
-  displayName     String    @db.VarChar(250)
+// Learn Meta - Contenido educativo con información de patrocinadores
+model AprLearnMeta {
+  id                        Int     @id @map("ID")
+  url                       String? @db.Text
+  thumbnailId               Int?    @map("thumbnail_id")
+  authorId                  Int?    @map("author_id")
+  authorName                String? @db.VarChar(255) @map("author_name")
+  images                    String? @db.Text
+  isSponsored               Boolean @default(false) @map("is_sponsored")
+  sponsorName               String? @db.VarChar(255) @map("sponsor_name")
+  sponsorUrl                String? @db.Text @map("sponsor_url")
+  sponsorImage              Int?    @default(0) @map("sponsor_image")
+  sponsorImageSidebarUrl    String? @db.Text @map("sponsor_image_sidebar_url")
+  sponsorImageSidebar       Int?    @default(0) @map("sponsor_image_sidebar")
+  sponsorImageContentUrl    String? @db.Text @map("sponsor_image_content_url")
+  sponsorImageContent       Int?    @default(0) @map("sponsor_image_content")
+  sponsorExtraData          String? @db.Text @map("sponsor_extra_data")
   
-  @@map("apr_users")
+  @@map("apr_learn_meta")
 }

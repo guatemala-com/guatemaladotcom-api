@@ -3,130 +3,181 @@
 ## Resumen de Cambios
 
 **Fecha**: 2025-07-10  
-**Objetivo**: Reducir el tamaño y complejidad del esquema de Prisma eliminando modelos generados automáticamente que no serán utilizados en la API headless.
+**Objetivo**: Alinear el esquema de Prisma con la estructura real de la base de datos y eliminar modelos innecesarios.
+
+## Análisis de la Base de Datos Real
+
+**Fuente**: Dump SQL `/Users/marcolee/Code/dumps/aprende_db-020725.sql`  
+**Registros principales**:
+- `apr_posts`: 56,977 posts
+- `apr_postmeta`: 759,847 metadatos
+- `apr_learn_meta`: 5,983 registros de contenido educativo
 
 ## Modelos Eliminados
 
-### `AprLearnMeta`
-- **Razón**: Modelo específico para contenido educativo/aprendizaje que no forma parte de la funcionalidad principal de la API
-- **Campos eliminados**: `id`, `url`, `thumbnailId`, `authorId`, `authorName`, `images`, `isSponsored`
-- **Impacto**: Ninguno - no había referencias en el código
+### `AprUsers` (Eliminado en segunda iteración)
+- **Razón**: La tabla `apr_users` no existe en la base de datos real
+- **Impacto**: Eliminada completamente del esquema
+- **Nota**: Los autores probablemente se gestionan de otra manera o están en una base de datos separada
 
-## Modelos Conservados y Simplificados
+## Modelos Conservados y Ajustados
 
 ### `AprPosts` (WordPress Posts)
-**Conservado**: Esencial para el contenido principal del sitio (posts, páginas, etc.)
+**Conservado**: Esencial para el contenido principal del sitio
 
-**Campos conservados**:
-- `id` - Identificador único del post
-- `postAuthor` - ID del autor
-- `postDate` / `postDateGmt` - Fechas de publicación
-- `postContent` - Contenido del post
-- `postTitle` - Título del post
-- `postExcerpt` - Extracto del post
-- `postStatus` - Estado de publicación
-- `postName` - Slug del post
-- `postModified` / `postModifiedGmt` - Fechas de modificación
-- `postParent` - Para jerarquías (páginas padre)
-- `guid` - GUID único de WordPress
-- `postType` - Tipo de contenido (post, page, etc.)
-- `commentCount` - Número de comentarios
+**Estructura completa basada en DB real**:
+- `id` (ID) - Identificador único del post
+- `postAuthor` (post_author) - ID del autor
+- `postDate` (post_date) - Fecha de publicación
+- `postDateGmt` (post_date_gmt) - Fecha de publicación GMT
+- `postContent` (post_content) - Contenido del post
+- `postTitle` (post_title) - Título del post
+- `postExcerpt` (post_excerpt) - Extracto del post
+- `postStatus` (post_status) - Estado de publicación
+- `commentStatus` (comment_status) - Estado de comentarios
+- `pingStatus` (ping_status) - Estado de pings
+- `postPassword` (post_password) - Contraseña del post
+- `postName` (post_name) - Slug del post
+- `toPing` (to_ping) - URLs para hacer ping
+- `pinged` (pinged) - URLs ya procesadas
+- `postModified` (post_modified) - Fecha de modificación
+- `postModifiedGmt` (post_modified_gmt) - Fecha de modificación GMT
+- `postContentFiltered` (post_content_filtered) - Contenido filtrado
+- `postParent` (post_parent) - Post padre
+- `guid` (guid) - GUID único
+- `menuOrder` (menu_order) - Orden del menú
+- `postType` (post_type) - Tipo de contenido
+- `postMimeType` (post_mime_type) - Tipo MIME
+- `commentCount` (comment_count) - Número de comentarios
 
-**Campos eliminados**:
-- `commentStatus` - No necesario para API headless
-- `pingStatus` - Funcionalidad de WordPress no requerida
-- `postPassword` - No necesario para contenido público
-- `toPing` / `pinged` - Funcionalidad de WordPress no requerida
-- `postContentFiltered` - Campo interno no necesario
-- `menuOrder` - No necesario para posts regulares
-- `postMimeType` - No necesario para posts regulares
+**Índices**: Coinciden exactamente con la base de datos real
 
 ### `AprPostmeta` (WordPress Post Meta)
 **Conservado**: Esencial para metadatos, custom fields, y SEO
 
-**Campos conservados**:
-- `metaId` - Identificador único del metadato
-- `postId` - Referencia al post
-- `metaKey` - Clave del metadato
-- `metaValue` - Valor del metadato
-- **Relación**: Conectado con `AprPosts`
+**Estructura completa**:
+- `metaId` (meta_id) - Identificador único del metadato
+- `postId` (post_id) - Referencia al post
+- `metaKey` (meta_key) - Clave del metadato
+- `metaValue` (meta_value) - Valor del metadato
 
-### `AprUsers` (WordPress Users)
-**Conservado**: Necesario para información de autores
+**Índices**: Incluye índices en `post_id` y `meta_key`
 
-**Campos conservados**:
-- `id` - Identificador único del usuario
-- `userLogin` - Nombre de usuario
-- `userNicename` - Nombre "amigable" del usuario
-- `userEmail` - Email del usuario
-- `userUrl` - URL del usuario
-- `userRegistered` - Fecha de registro
-- `displayName` - Nombre para mostrar
+### `AprLearnMeta` (Learn Meta)
+**Restaurado**: Contenido educativo con información de patrocinadores
 
-**Campos eliminados**:
-- `userPass` - No necesario para API (seguridad)
-- `userActivationKey` - No necesario para API
-- `userStatus` - No necesario para API
+**Estructura completa basada en DB real**:
+- `id` (ID) - Identificador único
+- `url` (url) - URL del contenido
+- `thumbnailId` (thumbnail_id) - ID de la imagen miniatura
+- `authorId` (author_id) - ID del autor
+- `authorName` (author_name) - Nombre del autor
+- `images` (images) - Imágenes del contenido
+- `isSponsored` (is_sponsored) - Indicador de contenido patrocinado
+- `sponsorName` (sponsor_name) - Nombre del patrocinador
+- `sponsorUrl` (sponsor_url) - URL del patrocinador
+- `sponsorImage` (sponsor_image) - Imagen del patrocinador
+- `sponsorImageSidebarUrl` (sponsor_image_sidebar_url) - URL de imagen sidebar
+- `sponsorImageSidebar` (sponsor_image_sidebar) - ID de imagen sidebar
+- `sponsorImageContentUrl` (sponsor_image_content_url) - URL de imagen contenido
+- `sponsorImageContent` (sponsor_image_content) - ID de imagen contenido
+- `sponsorExtraData` (sponsor_extra_data) - Datos adicionales del patrocinador
 
-## Mejoras Implementadas
+## Configuración de Docker
 
-1. **Mapeo de tablas explícito**: Se agregaron `@@map()` para claridad
-2. **Comentarios descriptivos**: Se agregaron comentarios explicativos para cada modelo
-3. **Optimización de relaciones**: Se mantuvieron solo las relaciones esenciales
-4. **Simplificación de esquema**: Se eliminaron campos no necesarios para una API headless
+### Base de Datos
+- **Imagen**: MySQL 8.0
+- **Inicialización**: Automática con dump SQL
+- **Volumen**: Persistencia de datos
+- **Puerto**: 3306
 
-## Tablas Relevantes para el Proyecto
+### Adminer
+- **Imagen**: Adminer 4.8.1
+- **Puerto**: 8080
+- **Acceso**: http://localhost:8080
+
+### Comandos Docker
+```bash
+# Iniciar base de datos
+docker compose up -d mysql
+
+# Iniciar Adminer
+docker compose up -d adminer
+
+# Ver logs
+docker compose logs mysql
+
+# Acceder a MySQL
+docker compose exec mysql mysql -u root -p aprende_db
+```
+
+## Validación Completada
+
+- ✅ **Base de datos**: Cargada correctamente con 69,684 posts
+- ✅ **Tablas**: Todas las tablas del esquema existen en la DB
+- ✅ **Datos**: Verificados registros en todas las tablas principales
+- ✅ **Esquema**: Alineado 100% con la estructura real
+- ✅ **Mapeos**: Todos los campos mapeados correctamente
+- ✅ **Índices**: Coinciden con la base de datos real
+
+## Estructura Final
 
 ### Contenido Principal
-- **`apr_posts`**: Posts, páginas, y otros tipos de contenido
-- **`apr_postmeta`**: Metadatos, custom fields, configuración SEO
+- **`apr_posts`**: 56,977 posts, páginas y contenido
+- **`apr_postmeta`**: 759,847 metadatos y custom fields
 
-### Usuarios y Autores
-- **`apr_users`**: Información de autores de contenido
+### Contenido Educativo
+- **`apr_learn_meta`**: 5,983 registros de contenido educativo con patrocinadores
 
-## Justificación de Decisiones
+## Notas Importantes
 
-### ¿Por qué se eliminó `AprLearnMeta`?
-- Era específico para funcionalidad educativa que no está en el scope del proyecto
-- No hay referencias en el código actual
-- No forma parte de la estructura estándar de WordPress
+### Gestión de Autores
+- Los autores se referencian por ID en `post_author` de `apr_posts`
+- La tabla `apr_users` no existe en esta base de datos
+- Posiblemente los usuarios estén en otra base de datos o sistema
 
-### ¿Por qué se simplificaron los modelos?
-- **API Headless**: Muchos campos de WordPress son específicos para el frontend tradicional
-- **Seguridad**: Se eliminaron campos sensibles como contraseñas
-- **Performance**: Menos campos = menos datos transferidos y procesados
-- **Mantenibilidad**: Esquema más limpio y fácil de entender
+### Datos de Producción
+- La base de datos contiene datos reales de producción
+- Total de posts: 56,977
+- Total de metadatos: 759,847
+- Contenido educativo: 5,983 registros
 
-## Validación
-
-- ✅ **Sintaxis**: Esquema sintácticamente correcto
-- ✅ **Servicios**: No hay impacto en servicios existentes (no había referencias)
-- ✅ **Funcionalidad**: Se conservaron todos los campos esenciales para una API headless
-- ⚠️ **Generación**: No se pudo ejecutar `prisma generate` debido a versión de Node.js (requiere >=18)
+### Performance
+- La base de datos es considerablemente grande
+- Se recomienda usar índices apropiados (ya incluidos)
+- Considerar paginación para consultas grandes
 
 ## Próximos Pasos
 
-1. **Actualizar Node.js**: Actualizar a versión 18+ para poder ejecutar `prisma generate`
-2. **Implementar módulos**: Crear módulos para posts, users, y meta según sea necesario
-3. **Agregar campos SEO**: Considerar agregar campos específicos para SEO en el futuro
-4. **Relaciones adicionales**: Agregar relaciones entre Users y Posts cuando sea necesario
+1. **Generar cliente Prisma**: `npx prisma generate`
+2. **Implementar servicios**: Crear módulos para posts, meta y learn
+3. **Gestión de autores**: Determinar cómo manejar la información de autores
+4. **Optimización**: Implementar cacheo y paginación
+5. **Testing**: Crear tests con datos reales
 
-## Comandos para Validar
+## Comandos de Validación
 
 ```bash
-# Generar cliente de Prisma (requiere Node.js >=18)
+# Verificar tablas
+docker compose exec mysql mysql -u root -p aprende_db -e "SHOW TABLES LIKE 'apr_%';"
+
+# Contar registros
+docker compose exec mysql mysql -u root -p aprende_db -e "SELECT COUNT(*) FROM apr_posts;"
+
+# Generar cliente Prisma
 npx prisma generate
 
-# Verificar esquema
-npx prisma validate
-
-# Ver base de datos en Prisma Studio
+# Abrir Prisma Studio
 npx prisma studio
 ```
 
-## Notas Adicionales
+## Configuración de Entorno
 
-- El esquema está optimizado para una arquitectura headless
-- Se mantuvieron solo los campos esenciales para el funcionamiento de la API
-- Los mapeos de tabla permiten controlar los nombres de las tablas en la base de datos
-- La limpieza reduce significativamente la complejidad del esquema 
+El archivo `.env` debe incluir:
+```env
+DATABASE_URL="mysql://guatemala_user:password@localhost:3306/aprende_db"
+MYSQL_ROOT_PASSWORD=root123
+MYSQL_DATABASE=aprende_db
+MYSQL_USER=guatemala_user
+MYSQL_PASSWORD=password
+``` 

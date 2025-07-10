@@ -3,7 +3,7 @@ version: '3.8'
 services:
   mysql:
     image: mysql:8.0
-    container_name: prisma-mysql
+    container_name: guatemaladotcom-mysql
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
@@ -14,13 +14,27 @@ services:
       - '3306:3306'
     volumes:
       - mysql_data:/var/lib/mysql
+      # Montar el dump SQL para inicialización
+      - /Users/marcolee/Code/dumps/aprende_db-020725.sql:/docker-entrypoint-initdb.d/aprende_db.sql:ro
     networks:
-      - prisma-network
-    command: --default-authentication-plugin=mysql_native_password
+      - guatemaladotcom-network
+    command: --default-authentication-plugin=mysql_native_password --max_allowed_packet=1073741824
+
+  # Opcional: Adminer para administrar la base de datos
+  adminer:
+    image: adminer:4.8.1
+    container_name: guatemaladotcom-adminer
+    restart: unless-stopped
+    ports:
+      - '8080:8080'
+    networks:
+      - guatemaladotcom-network
+    depends_on:
+      - mysql
 
 volumes:
   mysql_data:
 
 networks:
-  prisma-network:
+  guatemaladotcom-network:
     driver: bridge
