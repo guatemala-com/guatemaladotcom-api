@@ -288,6 +288,131 @@ describe('CertificateValidationMiddleware', () => {
         'Unknown error',
       );
     });
+
+    it('should handle certificate validation error in main try-catch', () => {
+      // Arrange
+      const mockCertificate = {
+        subject: {
+          CN: 'test-client.example.com',
+        },
+        serialNumber: '123456789',
+        raw: undefined,
+        fingerprint: undefined,
+      };
+
+      const mockTLSSocket = {
+        getPeerCertificate: jest.fn().mockReturnValue(mockCertificate),
+      };
+
+      const mockRequest = {
+        connection: mockTLSSocket,
+        socket: mockTLSSocket,
+      } as unknown as RequestWithCertificate;
+
+      const mockResponse = {} as Response;
+
+      // Mock the calculateFingerprint method to throw an error
+      jest
+        .spyOn(middleware as any, 'calculateFingerprint')
+        .mockImplementation(() => {
+          throw new Error('Fingerprint calculation failed');
+        });
+
+      // Act
+      middleware.use(mockRequest, mockResponse, mockNext);
+
+      // Assert
+      expect(mockNext).toHaveBeenCalledWith();
+      expect(console.warn).toHaveBeenCalledWith(
+        'Certificate validation error:',
+        'Fingerprint calculation failed',
+      );
+    });
+
+    it('should handle certificate validation error with unknown error type', () => {
+      // Arrange
+      const mockCertificate = {
+        subject: {
+          CN: 'test-client.example.com',
+        },
+        serialNumber: '123456789',
+        raw: undefined,
+        fingerprint: undefined,
+      };
+
+      const mockTLSSocket = {
+        getPeerCertificate: jest.fn().mockReturnValue(mockCertificate),
+      };
+
+      const mockRequest = {
+        connection: mockTLSSocket,
+        socket: mockTLSSocket,
+      } as unknown as RequestWithCertificate;
+
+      const mockResponse = {} as Response;
+
+      // Mock the calculateFingerprint method to throw a non-Error
+      jest
+        .spyOn(middleware as any, 'calculateFingerprint')
+        .mockImplementation(() => {
+          // eslint-disable-next-line @typescript-eslint/only-throw-error
+          throw 'string error';
+        });
+
+      // Act
+      middleware.use(mockRequest, mockResponse, mockNext);
+
+      // Assert
+      expect(mockNext).toHaveBeenCalledWith();
+      expect(console.warn).toHaveBeenCalledWith(
+        'Certificate validation error:',
+        'Unknown error',
+      );
+    });
+
+    it('should handle fingerprint calculation error and throw', () => {
+      // Arrange
+      const mockCertificate = {
+        subject: {
+          CN: 'test-client.example.com',
+        },
+        serialNumber: '123456789',
+        raw: undefined,
+        fingerprint: undefined,
+      };
+
+      const mockTLSSocket = {
+        getPeerCertificate: jest.fn().mockReturnValue(mockCertificate),
+      };
+
+      const mockRequest = {
+        connection: mockTLSSocket,
+        socket: mockTLSSocket,
+      } as unknown as RequestWithCertificate;
+
+      const mockResponse = {} as Response;
+
+      // Mock the calculateFingerprint method to throw an error that should be caught by the main try-catch
+      jest
+        .spyOn(middleware as any, 'calculateFingerprint')
+        .mockImplementation(() => {
+          console.warn(
+            'Error calculating certificate fingerprint:',
+            'Hash creation failed',
+          );
+          throw new Error('Unable to calculate certificate fingerprint');
+        });
+
+      // Act
+      middleware.use(mockRequest, mockResponse, mockNext);
+
+      // Assert
+      expect(mockNext).toHaveBeenCalledWith();
+      expect(console.warn).toHaveBeenCalledWith(
+        'Certificate validation error:',
+        'Unable to calculate certificate fingerprint',
+      );
+    });
   });
 
   describe('integration scenarios', () => {

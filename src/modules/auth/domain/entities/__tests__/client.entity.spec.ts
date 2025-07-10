@@ -28,6 +28,45 @@ describe('Client', () => {
       expect(client.allowedScopes).toEqual(['read', 'write', 'admin']);
       expect(scopes).toEqual(['read', 'write', 'admin', 'new-scope']);
     });
+
+    it('should return undefined for certificate fingerprint when not provided', () => {
+      // Assert
+      expect(client.certificateFingerprint).toBeUndefined();
+    });
+
+    it('should return certificate fingerprint when provided', () => {
+      // Arrange
+      const clientWithCertificate = new Client(
+        'test-client-id',
+        'test-client-secret',
+        ['read', 'write'],
+        'test-fingerprint',
+      );
+
+      // Assert
+      expect(clientWithCertificate.certificateFingerprint).toBe(
+        'test-fingerprint',
+      );
+    });
+
+    it('should return false for requiresCertificate when not provided', () => {
+      // Assert
+      expect(client.requiresCertificate).toBe(false);
+    });
+
+    it('should return requiresCertificate value when provided', () => {
+      // Arrange
+      const clientWithCertificate = new Client(
+        'test-client-id',
+        'test-client-secret',
+        ['read', 'write'],
+        'test-fingerprint',
+        true,
+      );
+
+      // Assert
+      expect(clientWithCertificate.requiresCertificate).toBe(true);
+    });
   });
 
   describe('hasScope', () => {
@@ -103,6 +142,76 @@ describe('Client', () => {
       expect(client.validateCredentials('wrong-secret')).toBe(false);
       expect(client.validateCredentials('')).toBe(false);
       expect(client.validateCredentials('TEST-CLIENT-SECRET')).toBe(false);
+    });
+  });
+
+  describe('validateCertificate', () => {
+    it('should return true when certificate is not required', () => {
+      // Act & Assert
+      expect(client.validateCertificate()).toBe(true);
+      expect(client.validateCertificate('any-fingerprint')).toBe(true);
+    });
+
+    it('should return false when certificate is required but not provided', () => {
+      // Arrange
+      const clientWithRequiredCertificate = new Client(
+        'test-client-id',
+        'test-client-secret',
+        ['read', 'write'],
+        'expected-fingerprint',
+        true,
+      );
+
+      // Act & Assert
+      expect(clientWithRequiredCertificate.validateCertificate()).toBe(false);
+    });
+
+    it('should return true when certificate matches the configured fingerprint', () => {
+      // Arrange
+      const clientWithCertificate = new Client(
+        'test-client-id',
+        'test-client-secret',
+        ['read', 'write'],
+        'expected-fingerprint',
+        true,
+      );
+
+      // Act & Assert
+      expect(
+        clientWithCertificate.validateCertificate('expected-fingerprint'),
+      ).toBe(true);
+    });
+
+    it('should return false when certificate does not match the configured fingerprint', () => {
+      // Arrange
+      const clientWithCertificate = new Client(
+        'test-client-id',
+        'test-client-secret',
+        ['read', 'write'],
+        'expected-fingerprint',
+        true,
+      );
+
+      // Act & Assert
+      expect(
+        clientWithCertificate.validateCertificate('wrong-fingerprint'),
+      ).toBe(false);
+    });
+
+    it('should return true when certificate is required but no specific fingerprint is configured', () => {
+      // Arrange
+      const clientWithRequiredCertificate = new Client(
+        'test-client-id',
+        'test-client-secret',
+        ['read', 'write'],
+        undefined,
+        true,
+      );
+
+      // Act & Assert
+      expect(
+        clientWithRequiredCertificate.validateCertificate('any-fingerprint'),
+      ).toBe(true);
     });
   });
 

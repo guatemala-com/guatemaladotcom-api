@@ -394,6 +394,21 @@ describe('AuthController', () => {
         controller.refreshToken(validRefreshRequest),
       ).rejects.toThrow(refreshError);
     });
+
+    it('should log warning and throw error when refresh token use case fails', async () => {
+      // Arrange
+      const warnSpy = jest.spyOn(Logger.prototype, 'warn');
+      const refreshError = new BadRequestException('Invalid refresh token');
+      refreshTokenUseCase.execute.mockRejectedValue(refreshError);
+
+      // Act & Assert
+      await expect(
+        controller.refreshToken(validRefreshRequest),
+      ).rejects.toThrow(refreshError);
+      expect(warnSpy).toHaveBeenCalledWith(
+        'Refresh token failed: Invalid refresh token',
+      );
+    });
   });
 
   describe('generateClient', () => {
@@ -465,6 +480,22 @@ describe('AuthController', () => {
       expect(result).toEqual(invalidResponse);
       expect(result.valid).toBe(false);
       expect(result.payload).toBeUndefined();
+    });
+
+    it('should log warning when token verification fails', async () => {
+      // Arrange
+      const warnSpy = jest.spyOn(Logger.prototype, 'warn');
+      const invalidResponse: TokenVerificationResponseDto = {
+        valid: false,
+        payload: undefined,
+      };
+      verifyTokenUseCase.execute.mockResolvedValue(invalidResponse);
+
+      // Act
+      await controller.verifyToken(validVerificationRequest);
+
+      // Assert
+      expect(warnSpy).toHaveBeenCalledWith('Token verification failed');
     });
 
     it('should handle verification errors', async () => {
