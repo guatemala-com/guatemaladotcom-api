@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { Response, NextFunction } from 'express';
+import * as crypto from 'crypto';
 import {
   CertificateValidationMiddleware,
   RequestWithCertificate,
@@ -412,6 +413,103 @@ describe('CertificateValidationMiddleware', () => {
         'Certificate validation error:',
         'Unable to calculate certificate fingerprint',
       );
+    });
+  });
+
+  describe('calculateFingerprint internal errors', () => {
+    it('should handle crypto hash creation error within calculateFingerprint', () => {
+      // Arrange
+      const mockCertificate = {
+        subject: {
+          CN: 'test-client.example.com',
+        },
+        serialNumber: '123456789',
+        raw: undefined,
+        fingerprint: undefined,
+      };
+
+      const mockTLSSocket = {
+        getPeerCertificate: jest.fn().mockReturnValue(mockCertificate),
+      };
+
+      const mockRequest = {
+        connection: mockTLSSocket,
+        socket: mockTLSSocket,
+      } as unknown as RequestWithCertificate;
+
+      const mockResponse = {} as Response;
+
+      // Mock crypto.createHash to throw an error directly
+      const createHashSpy = jest
+        .spyOn(crypto, 'createHash')
+        .mockImplementation(() => {
+          throw new Error('Hash creation failed');
+        });
+
+      // Act
+      middleware.use(mockRequest, mockResponse, mockNext);
+
+      // Assert
+      expect(mockNext).toHaveBeenCalledWith();
+      expect(console.warn).toHaveBeenCalledWith(
+        'Error calculating certificate fingerprint:',
+        'Hash creation failed',
+      );
+      expect(console.warn).toHaveBeenCalledWith(
+        'Certificate validation error:',
+        'Unable to calculate certificate fingerprint',
+      );
+
+      // Restore original function
+      createHashSpy.mockRestore();
+    });
+
+    it('should handle non-Error exception in calculateFingerprint', () => {
+      // Arrange
+      const mockCertificate = {
+        subject: {
+          CN: 'test-client.example.com',
+        },
+        serialNumber: '123456789',
+        raw: undefined,
+        fingerprint: undefined,
+      };
+
+      const mockTLSSocket = {
+        getPeerCertificate: jest.fn().mockReturnValue(mockCertificate),
+      };
+
+      const mockRequest = {
+        connection: mockTLSSocket,
+        socket: mockTLSSocket,
+      } as unknown as RequestWithCertificate;
+
+      const mockResponse = {} as Response;
+
+      // Mock crypto.createHash to throw a non-Error
+      const createHashSpy = jest
+        .spyOn(crypto, 'createHash')
+        .mockImplementation(() => {
+          // eslint-disable-next-line @typescript-eslint/only-throw-error
+          throw 'string error';
+        });
+
+      // Act
+      middleware.use(mockRequest, mockResponse, mockNext);
+
+      // Assert
+      expect(mockNext).toHaveBeenCalledWith();
+      expect(console.warn).toHaveBeenCalledWith(
+        'Error calculating certificate fingerprint:',
+        'Unknown error',
+      );
+      expect(console.warn).toHaveBeenCalledWith(
+        'Certificate validation error:',
+        'Unable to calculate certificate fingerprint',
+      );
+
+      // Restore original function
+      createHashSpy.mockRestore();
     });
   });
 
