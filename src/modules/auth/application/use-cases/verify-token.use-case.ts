@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { TokenRepositoryImpl } from '../../infrastructure/repositories/token.repository';
 
 export interface VerifyTokenRequest {
@@ -26,6 +26,8 @@ export interface VerifyTokenResponse {
  */
 @Injectable()
 export class VerifyTokenUseCase {
+  private readonly logger = new Logger(VerifyTokenUseCase.name);
+
   constructor(private readonly tokenRepository: TokenRepositoryImpl) {}
 
   /**
@@ -34,15 +36,22 @@ export class VerifyTokenUseCase {
   async execute(request: VerifyTokenRequest): Promise<VerifyTokenResponse> {
     const { token } = request;
 
+    this.logger.debug('Token verification requested');
+
     try {
       // Validate the token
       const tokenEntity = await this.tokenRepository.validateToken(token);
+
+      this.logger.log(
+        `Token verified successfully for client: ${tokenEntity.getVerificationInfo().client_id}`,
+      );
 
       return {
         valid: true,
         payload: tokenEntity.getVerificationInfo(),
       };
     } catch {
+      this.logger.warn('Token verification failed');
       return {
         valid: false,
         error: 'Invalid token',
