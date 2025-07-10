@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  Logger,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ClientRepositoryImpl } from '../../infrastructure/repositories/client.repository';
 import { TokenRepositoryImpl } from '../../infrastructure/repositories/token.repository';
@@ -7,7 +12,10 @@ import { RefreshToken } from '../../domain/entities/refresh-token.entity';
 
 export interface GenerateTokenRequest {
   clientId: string;
+  clientSecret: string;
+  grantType: string;
   scope?: string;
+  certificateFingerprint?: string;
 }
 
 export interface GenerateTokenResponse {
@@ -26,6 +34,8 @@ export interface GenerateTokenResponse {
  */
 @Injectable()
 export class GenerateTokenUseCase {
+  private readonly logger = new Logger(GenerateTokenUseCase.name);
+
   constructor(
     private readonly clientRepository: ClientRepositoryImpl,
     private readonly tokenRepository: TokenRepositoryImpl,
@@ -37,13 +47,45 @@ export class GenerateTokenUseCase {
    * Execute the generate token use case
    */
   async execute(request: GenerateTokenRequest): Promise<GenerateTokenResponse> {
-    const { clientId, scope } = request;
+    const { clientId, clientSecret, grantType, scope, certificateFingerprint } =
+      request;
 
-    // Find the client
+    // Validate grant type
+    if (grantType !== 'client_credentials') {
+      this.logger.warn(
+        `Unsupported grant type: ${grantType} from client: ${clientId}`,
+      );
+      throw new BadRequestException(
+        'Only client_credentials grant type is supported',
+      );
+    }
+
+    this.logger.debug(
+      `Generating access token for client: ${clientId}, requested scopes: ${scope || 'none'}`,
+    );
+
+    // Find and validate the client
     const client = await this.clientRepository.findByClientId(clientId);
 
     if (!client) {
-      throw new BadRequestException('Client not found');
+      this.logger.warn(`Client not found for token generation: ${clientId}`);
+      throw new UnauthorizedException('Client not found');
+    }
+
+    // Validate credentials
+    const isValid = client.validateCredentials(clientSecret);
+    if (!isValid) {
+      this.logger.warn(`Invalid client credentials for client: ${clientId}`);
+      throw new UnauthorizedException('Invalid client credentials');
+    }
+
+    // Validate certificate if required
+    const isCertificateValid = client.validateCertificate(
+      certificateFingerprint,
+    );
+    if (!isCertificateValid) {
+      this.logger.warn(`Invalid client certificate for client: ${clientId}`);
+      throw new UnauthorizedException('Invalid client certificate');
     }
 
     // Validate and filter scopes
@@ -51,6 +93,9 @@ export class GenerateTokenUseCase {
     try {
       validatedScope = client.validateAndFilterScopes(scope);
     } catch (error) {
+      this.logger.warn(
+        `Scope validation failed for client ${clientId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
       throw new BadRequestException(
         error instanceof Error ? error.message : 'Invalid scopes',
       );
@@ -83,6 +128,10 @@ export class GenerateTokenUseCase {
       // Save the refresh token
       await this.refreshTokenRepository.save(refreshToken);
     }
+
+    this.logger.log(
+      `Access token generated successfully for client: ${clientId}`,
+    );
 
     return {
       accessToken: token.accessToken,

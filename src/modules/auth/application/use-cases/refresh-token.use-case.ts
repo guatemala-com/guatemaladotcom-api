@@ -2,6 +2,7 @@ import {
   Injectable,
   UnauthorizedException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { RefreshTokenRepositoryImpl } from '../../infrastructure/repositories/refresh-token.repository';
@@ -10,6 +11,7 @@ import { RefreshToken } from '../../domain/entities/refresh-token.entity';
 
 export interface RefreshTokenRequest {
   refreshToken: string;
+  grantType: string;
   scope?: string;
 }
 
@@ -29,6 +31,8 @@ export interface RefreshTokenResponse {
  */
 @Injectable()
 export class RefreshTokenUseCase {
+  private readonly logger = new Logger(RefreshTokenUseCase.name);
+
   constructor(
     private readonly refreshTokenRepository: RefreshTokenRepositoryImpl,
     private readonly tokenRepository: TokenRepositoryImpl,
@@ -39,13 +43,24 @@ export class RefreshTokenUseCase {
    * Execute the refresh token use case
    */
   async execute(request: RefreshTokenRequest): Promise<RefreshTokenResponse> {
-    const { refreshToken: refreshTokenString, scope } = request;
+    const { refreshToken: refreshTokenString, grantType, scope } = request;
+
+    // Validate grant type
+    if (grantType !== 'refresh_token') {
+      this.logger.warn(`Unsupported grant type: ${grantType}`);
+      throw new BadRequestException(
+        'Only refresh_token grant type is supported for this endpoint',
+      );
+    }
+
+    this.logger.debug('Refresh token request received');
 
     // Find the refresh token
     const refreshToken =
       await this.refreshTokenRepository.findByToken(refreshTokenString);
 
     if (!refreshToken) {
+      this.logger.warn('Invalid refresh token provided');
       throw new UnauthorizedException('Invalid refresh token');
     }
 
@@ -54,13 +69,16 @@ export class RefreshTokenUseCase {
       if (refreshToken.isExpired()) {
         // Clean up expired token
         await this.refreshTokenRepository.deleteByToken(refreshTokenString);
+        this.logger.warn('Refresh token has expired');
         throw new UnauthorizedException('Refresh token has expired');
       }
 
       if (refreshToken.isRevoked) {
+        this.logger.warn('Refresh token has been revoked');
         throw new UnauthorizedException('Refresh token has been revoked');
       }
 
+      this.logger.warn('Invalid refresh token');
       throw new UnauthorizedException('Invalid refresh token');
     }
 
@@ -68,6 +86,7 @@ export class RefreshTokenUseCase {
     let finalScope = refreshToken.scope;
     if (scope) {
       if (!this.isScopeValid(scope, refreshToken.scope)) {
+        this.logger.warn('Requested scope exceeds refresh token scope');
         throw new BadRequestException(
           'Requested scope exceeds refresh token scope',
         );
@@ -106,6 +125,8 @@ export class RefreshTokenUseCase {
       // Save the new refresh token
       await this.refreshTokenRepository.save(newRefreshToken);
     }
+
+    this.logger.log('Refresh token processed successfully');
 
     return {
       accessToken: newAccessToken.accessToken,

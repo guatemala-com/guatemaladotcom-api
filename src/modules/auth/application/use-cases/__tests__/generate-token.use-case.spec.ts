@@ -15,7 +15,7 @@ jest.mock('../../../domain/entities/refresh-token.entity', () => ({
 }));
 
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   GenerateTokenUseCase,
@@ -108,10 +108,12 @@ describe('GenerateTokenUseCase', () => {
   describe('execute', () => {
     const validRequest: GenerateTokenRequest = {
       clientId: 'test-client-id',
+      clientSecret: 'test-client-secret',
+      grantType: 'client_credentials',
       scope: 'read write',
     };
 
-    it('should generate token successfully with valid client and scopes', async () => {
+    it('should generate token successfully with valid client credentials and scopes', async () => {
       // Arrange
       mockClientRepository.findByClientId.mockResolvedValue(mockClient);
       mockTokenRepository.generateToken.mockResolvedValue(mockToken);
@@ -142,10 +144,90 @@ describe('GenerateTokenUseCase', () => {
       );
     });
 
+    it('should throw BadRequestException for unsupported grant type', async () => {
+      // Arrange
+      const invalidRequest: GenerateTokenRequest = {
+        ...validRequest,
+        grantType: 'authorization_code',
+      };
+
+      // Act & Assert
+      await expect(useCase.execute(invalidRequest)).rejects.toThrow(
+        BadRequestException,
+      );
+      await expect(useCase.execute(invalidRequest)).rejects.toThrow(
+        'Only client_credentials grant type is supported',
+      );
+      expect(mockClientRepository.findByClientId).not.toHaveBeenCalled();
+      expect(mockTokenRepository.generateToken).not.toHaveBeenCalled();
+    });
+
+    it('should throw UnauthorizedException when client is not found', async () => {
+      // Arrange
+      mockClientRepository.findByClientId.mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(useCase.execute(validRequest)).rejects.toThrow(
+        UnauthorizedException,
+      );
+      await expect(useCase.execute(validRequest)).rejects.toThrow(
+        'Client not found',
+      );
+      expect(mockTokenRepository.generateToken).not.toHaveBeenCalled();
+    });
+
+    it('should throw UnauthorizedException when client credentials are invalid', async () => {
+      // Arrange
+      const invalidCredentialsClient = {
+        ...mockClient,
+        validateCredentials: jest.fn().mockReturnValue(false),
+      };
+      mockClientRepository.findByClientId.mockResolvedValue(
+        invalidCredentialsClient,
+      );
+
+      // Act & Assert
+      await expect(useCase.execute(validRequest)).rejects.toThrow(
+        UnauthorizedException,
+      );
+      await expect(useCase.execute(validRequest)).rejects.toThrow(
+        'Invalid client credentials',
+      );
+      expect(mockTokenRepository.generateToken).not.toHaveBeenCalled();
+    });
+
+    it('should throw UnauthorizedException when client certificate is invalid', async () => {
+      // Arrange
+      const invalidCertificateClient = {
+        ...mockClient,
+        validateCredentials: jest.fn().mockReturnValue(true),
+        validateCertificate: jest.fn().mockReturnValue(false),
+      };
+      mockClientRepository.findByClientId.mockResolvedValue(
+        invalidCertificateClient,
+      );
+
+      const requestWithCertificate: GenerateTokenRequest = {
+        ...validRequest,
+        certificateFingerprint: 'invalid-fingerprint',
+      };
+
+      // Act & Assert
+      await expect(useCase.execute(requestWithCertificate)).rejects.toThrow(
+        UnauthorizedException,
+      );
+      await expect(useCase.execute(requestWithCertificate)).rejects.toThrow(
+        'Invalid client certificate',
+      );
+      expect(mockTokenRepository.generateToken).not.toHaveBeenCalled();
+    });
+
     it('should generate token successfully without scope', async () => {
       // Arrange
       const requestWithoutScope: GenerateTokenRequest = {
         clientId: 'test-client-id',
+        clientSecret: 'test-client-secret',
+        grantType: 'client_credentials',
       };
       mockClientRepository.findByClientId.mockResolvedValue(mockClient);
       mockTokenRepository.generateToken.mockResolvedValue(mockToken);
@@ -174,6 +256,8 @@ describe('GenerateTokenUseCase', () => {
       // Arrange
       const requestWithEmptyScope: GenerateTokenRequest = {
         clientId: 'test-client-id',
+        clientSecret: 'test-client-secret',
+        grantType: 'client_credentials',
         scope: '',
       };
       mockClientRepository.findByClientId.mockResolvedValue(mockClient);
@@ -203,6 +287,8 @@ describe('GenerateTokenUseCase', () => {
       // Arrange
       const requestWithWhitespaceScope: GenerateTokenRequest = {
         clientId: 'test-client-id',
+        clientSecret: 'test-client-secret',
+        grantType: 'client_credentials',
         scope: '   ',
       };
       mockClientRepository.findByClientId.mockResolvedValue(mockClient);
@@ -226,20 +312,6 @@ describe('GenerateTokenUseCase', () => {
         refreshToken: 'mock-refresh-token',
         scope: undefined,
       });
-    });
-
-    it('should throw BadRequestException when client is not found', async () => {
-      // Arrange
-      mockClientRepository.findByClientId.mockResolvedValue(null);
-
-      // Act & Assert
-      await expect(useCase.execute(validRequest)).rejects.toThrow(
-        new BadRequestException('Client not found'),
-      );
-      expect(mockClientRepository.findByClientId).toHaveBeenCalledWith(
-        'test-client-id',
-      );
-      expect(mockTokenRepository.generateToken).not.toHaveBeenCalled();
     });
 
     it('should throw BadRequestException when client has unauthorized scopes', async () => {
@@ -282,6 +354,8 @@ describe('GenerateTokenUseCase', () => {
       // Arrange
       const clientWithError = {
         ...mockClient,
+        validateCredentials: jest.fn().mockReturnValue(true),
+        validateCertificate: jest.fn().mockReturnValue(true),
         validateAndFilterScopes: jest.fn().mockImplementation(() => {
           throw new Error('Custom validation error');
         }),
@@ -302,6 +376,8 @@ describe('GenerateTokenUseCase', () => {
       // Arrange
       const clientWithError = {
         ...mockClient,
+        validateCredentials: jest.fn().mockReturnValue(true),
+        validateCertificate: jest.fn().mockReturnValue(true),
         validateAndFilterScopes: jest.fn().mockImplementation(() => {
           throw new Error('String error');
         }),
@@ -322,6 +398,8 @@ describe('GenerateTokenUseCase', () => {
       // Arrange
       const clientWithNonErrorException = {
         ...mockClient,
+        validateCredentials: jest.fn().mockReturnValue(true),
+        validateCertificate: jest.fn().mockReturnValue(true),
         validateAndFilterScopes: jest.fn().mockImplementation(() => {
           // eslint-disable-next-line @typescript-eslint/only-throw-error
           throw 'string error';
@@ -345,6 +423,8 @@ describe('GenerateTokenUseCase', () => {
       // Arrange
       const requestWithMixedScopes: GenerateTokenRequest = {
         clientId: 'test-client-id',
+        clientSecret: 'test-client-secret',
+        grantType: 'client_credentials',
         scope: 'read write admin invalid',
       };
       mockClientRepository.findByClientId.mockResolvedValue(mockClient);
@@ -366,6 +446,8 @@ describe('GenerateTokenUseCase', () => {
       // Arrange
       const requestWithWhitespace: GenerateTokenRequest = {
         clientId: 'test-client-id',
+        clientSecret: 'test-client-secret',
+        grantType: 'client_credentials',
         scope: '  read   write  ',
       };
       mockClientRepository.findByClientId.mockResolvedValue(mockClient);

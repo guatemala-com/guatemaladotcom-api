@@ -121,8 +121,27 @@ describe('RefreshTokenUseCase', () => {
   describe('execute', () => {
     const validRequest: RefreshTokenRequest = {
       refreshToken: 'test-refresh-token',
+      grantType: 'refresh_token',
       scope: 'read',
     };
+
+    it('should throw BadRequestException for unsupported grant type', async () => {
+      // Arrange
+      const invalidRequest: RefreshTokenRequest = {
+        ...validRequest,
+        grantType: 'client_credentials',
+      };
+
+      // Act & Assert
+      await expect(useCase.execute(invalidRequest)).rejects.toThrow(
+        BadRequestException,
+      );
+      await expect(useCase.execute(invalidRequest)).rejects.toThrow(
+        'Only refresh_token grant type is supported for this endpoint',
+      );
+      expect(mockRefreshTokenRepository.findByToken).not.toHaveBeenCalled();
+      expect(mockTokenRepository.generateToken).not.toHaveBeenCalled();
+    });
 
     it('should refresh token successfully with rotation enabled', async () => {
       // Arrange
@@ -208,7 +227,10 @@ describe('RefreshTokenUseCase', () => {
 
     it('should refresh token successfully without specific scope', async () => {
       // Arrange
-      const requestWithoutScope = { refreshToken: 'test-refresh-token' };
+      const requestWithoutScope: RefreshTokenRequest = {
+        refreshToken: 'test-refresh-token',
+        grantType: 'refresh_token',
+      };
       mockRefreshTokenRepository.findByToken.mockResolvedValue(
         mockRefreshTokenEntity,
       );
@@ -307,8 +329,9 @@ describe('RefreshTokenUseCase', () => {
 
     it('should throw BadRequestException when requested scope exceeds refresh token scope', async () => {
       // Arrange
-      const requestWithInvalidScope = {
+      const requestWithInvalidScope: RefreshTokenRequest = {
         refreshToken: 'test-refresh-token',
+        grantType: 'refresh_token',
         scope: 'admin',
       };
       mockRefreshTokenRepository.findByToken.mockResolvedValue(
@@ -347,8 +370,9 @@ describe('RefreshTokenUseCase', () => {
 
     it('should validate scope correctly for multiple scopes', async () => {
       // Arrange
-      const requestWithMultipleScopes = {
+      const requestWithMultipleScopes: RefreshTokenRequest = {
         refreshToken: 'test-refresh-token',
+        grantType: 'refresh_token',
         scope: 'read write',
       };
       mockRefreshTokenRepository.findByToken.mockResolvedValue(
