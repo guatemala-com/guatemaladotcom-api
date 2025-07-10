@@ -13,63 +13,52 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model AprLearnMeta {
-  id          Int     @id @map("ID")
-  url         String? @db.Text
-  thumbnailId Int?
-  authorId    Int?
-  authorName  String? @db.VarChar(255)
-  images      String? @db.Text
-  isSponsored Boolean @default(false)
+// WordPress Posts - Contenido principal del sitio
+model AprPosts {
+  id              BigInt        @id @default(autoincrement()) @map("ID")
+  postAuthor      BigInt        @default(0)
+  postDate        DateTime?
+  postDateGmt     DateTime?
+  postContent     String        @db.LongText
+  postTitle       String        @db.Text
+  postExcerpt     String        @db.Text
+  postStatus      String        @default("publish") @db.VarChar(20)
+  postName        String        @db.VarChar(200)  // slug
+  postModified    DateTime?
+  postModifiedGmt DateTime?
+  postParent      BigInt        @default(0)
+  guid            String        @db.VarChar(255)
+  postType        String        @default("post") @db.VarChar(20)
+  commentCount    BigInt        @default(0)
+  
+  // Relations
+  metas           AprPostmeta[]
+  
+  @@map("apr_posts")
 }
 
+// WordPress Post Meta - Metadatos, custom fields, SEO
 model AprPostmeta {
   metaId    BigInt    @id @default(autoincrement())
   postId    BigInt
   metaKey   String?   @db.VarChar(255)
   metaValue String?   @db.LongText
+  
   // Relations
   post      AprPosts? @relation(fields: [postId], references: [id])
+  
+  @@map("apr_postmeta")
 }
 
-// TODO: check if we need all these fields
-// TODO: add seo fields
-model AprPosts {
-  id                  BigInt        @id @default(autoincrement()) @map("ID")
-  postAuthor          BigInt        @default(0)
-  postDate            DateTime?
-  postDateGmt         DateTime?
-  postContent         String        @db.LongText
-  postTitle           String        @db.Text
-  postExcerpt         String        @db.Text
-  postStatus          String        @default("publish") @db.VarChar(20)
-  commentStatus       String        @default("open") @db.VarChar(20)
-  pingStatus          String        @default("open") @db.VarChar(20)
-  postPassword        String        @db.VarChar(255)
-  postName            String        @db.VarChar(200)
-  toPing              String        @db.Text
-  pinged              String        @db.Text
-  postModified        DateTime?
-  postModifiedGmt     DateTime?
-  postContentFiltered String        @db.LongText
-  postParent          BigInt        @default(0)
-  guid                String        @db.VarChar(255)
-  menuOrder           Int           @default(0)
-  postType            String        @default("post") @db.VarChar(20)
-  postMimeType        String        @db.VarChar(100)
-  commentCount        BigInt        @default(0)
-  metas               AprPostmeta[]
-}
-
+// WordPress Users - Información de autores
 model AprUsers {
-  id                BigInt    @id @default(autoincrement()) @map("ID")
-  userLogin         String    @db.VarChar(60)
-  userPass          String    @db.VarChar(255)
-  userNicename      String    @db.VarChar(50)
-  userEmail         String    @db.VarChar(100)
-  userUrl           String    @db.VarChar(100)
-  userRegistered    DateTime?
-  userActivationKey String    @db.VarChar(255)
-  userStatus        Int       @default(0)
-  displayName       String    @db.VarChar(250)
+  id              BigInt    @id @default(autoincrement()) @map("ID")
+  userLogin       String    @db.VarChar(60)
+  userNicename    String    @db.VarChar(50)
+  userEmail       String    @db.VarChar(100)
+  userUrl         String    @db.VarChar(100)
+  userRegistered  DateTime?
+  displayName     String    @db.VarChar(250)
+  
+  @@map("apr_users")
 }
