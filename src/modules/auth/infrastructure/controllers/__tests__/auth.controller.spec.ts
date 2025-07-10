@@ -8,6 +8,7 @@ import { ValidateClientUseCase } from '../../../application/use-cases/validate-c
 import { GenerateTokenUseCase } from '../../../application/use-cases/generate-token.use-case';
 import { VerifyTokenUseCase } from '../../../application/use-cases/verify-token.use-case';
 import { GenerateClientCredentialsUseCase } from '../../../application/use-cases/generate-client-credentials.use-case';
+import { RefreshTokenUseCase } from '../../../application/use-cases/refresh-token.use-case';
 import {
   TokenRequestDto,
   TokenResponseDto,
@@ -25,6 +26,13 @@ describe('AuthController', () => {
   let generateTokenUseCase: jest.Mocked<GenerateTokenUseCase>;
   let verifyTokenUseCase: jest.Mocked<VerifyTokenUseCase>;
   let generateClientCredentialsUseCase: jest.Mocked<GenerateClientCredentialsUseCase>;
+  let refreshTokenUseCase: jest.Mocked<RefreshTokenUseCase>;
+
+  const mockRequest = {
+    socket: {
+      getPeerCertificate: jest.fn(),
+    },
+  } as any;
 
   const mockTokenResponse: TokenResponseDto = {
     access_token: 'mock-access-token-123',
@@ -59,6 +67,10 @@ describe('AuthController', () => {
     };
 
     const mockGenerateClientCredentialsUseCase = {
+      execute: jest.fn(),
+    };
+
+    const mockRefreshTokenUseCase = {
       execute: jest.fn(),
     };
 
@@ -101,6 +113,10 @@ describe('AuthController', () => {
           useValue: mockGenerateClientCredentialsUseCase,
         },
         {
+          provide: RefreshTokenUseCase,
+          useValue: mockRefreshTokenUseCase,
+        },
+        {
           provide: ConfigService,
           useValue: mockConfigService,
         },
@@ -117,6 +133,7 @@ describe('AuthController', () => {
     generateClientCredentialsUseCase = module.get(
       GenerateClientCredentialsUseCase,
     );
+    refreshTokenUseCase = module.get(RefreshTokenUseCase);
 
     // Mock logger to avoid console output during tests
     jest.spyOn(Logger.prototype, 'log').mockImplementation(() => {});
@@ -151,7 +168,7 @@ describe('AuthController', () => {
       });
 
       // Act
-      const result = await controller.getToken(validTokenRequest);
+      const result = await controller.getToken(validTokenRequest, mockRequest);
 
       // Assert
       expect(validateClientUseCase.execute).toHaveBeenCalledWith({
@@ -182,7 +199,10 @@ describe('AuthController', () => {
       });
 
       // Act
-      const result = await controller.getToken(requestWithoutScope);
+      const result = await controller.getToken(
+        requestWithoutScope,
+        mockRequest,
+      );
 
       // Assert
       expect(generateTokenUseCase.execute).toHaveBeenCalledWith({
@@ -200,12 +220,12 @@ describe('AuthController', () => {
       };
 
       // Act & Assert
-      await expect(controller.getToken(invalidRequest)).rejects.toThrow(
-        BadRequestException,
-      );
-      await expect(controller.getToken(invalidRequest)).rejects.toThrow(
-        'Only client_credentials grant type is supported',
-      );
+      await expect(
+        controller.getToken(invalidRequest, mockRequest),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        controller.getToken(invalidRequest, mockRequest),
+      ).rejects.toThrow('Only client_credentials grant type is supported');
     });
 
     it('should throw error when client validation fails', async () => {
@@ -214,9 +234,9 @@ describe('AuthController', () => {
       validateClientUseCase.execute.mockRejectedValue(validationError);
 
       // Act & Assert
-      await expect(controller.getToken(validTokenRequest)).rejects.toThrow(
-        validationError,
-      );
+      await expect(
+        controller.getToken(validTokenRequest, mockRequest),
+      ).rejects.toThrow(validationError);
       expect(validateClientUseCase.execute).toHaveBeenCalledWith({
         clientId: validTokenRequest.client_id,
         clientSecret: validTokenRequest.client_secret,
@@ -234,9 +254,9 @@ describe('AuthController', () => {
       generateTokenUseCase.execute.mockRejectedValue(scopeError);
 
       // Act & Assert
-      await expect(controller.getToken(validTokenRequest)).rejects.toThrow(
-        scopeError,
-      );
+      await expect(
+        controller.getToken(validTokenRequest, mockRequest),
+      ).rejects.toThrow(scopeError);
     });
 
     it('should throw BadRequestException for unknown token generation errors', async () => {
@@ -249,12 +269,12 @@ describe('AuthController', () => {
       generateTokenUseCase.execute.mockRejectedValue(unknownError);
 
       // Act & Assert
-      await expect(controller.getToken(validTokenRequest)).rejects.toThrow(
-        BadRequestException,
-      );
-      await expect(controller.getToken(validTokenRequest)).rejects.toThrow(
-        'Error generating access token',
-      );
+      await expect(
+        controller.getToken(validTokenRequest, mockRequest),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        controller.getToken(validTokenRequest, mockRequest),
+      ).rejects.toThrow('Error generating access token');
     });
 
     it('should handle empty scope string', async () => {
@@ -276,7 +296,10 @@ describe('AuthController', () => {
       });
 
       // Act
-      const result = await controller.getToken(requestWithEmptyScope);
+      const result = await controller.getToken(
+        requestWithEmptyScope,
+        mockRequest,
+      );
 
       // Assert
       expect(generateTokenUseCase.execute).toHaveBeenCalledWith({
@@ -462,12 +485,15 @@ describe('AuthController', () => {
       });
 
       // Act
-      await controller.getToken({
-        grant_type: 'client_credentials',
-        client_id: 'test-client',
-        client_secret: 'test-secret',
-        scope: 'read',
-      });
+      await controller.getToken(
+        {
+          grant_type: 'client_credentials',
+          client_id: 'test-client',
+          client_secret: 'test-secret',
+          scope: 'read',
+        },
+        mockRequest,
+      );
 
       // Assert
       expect(logSpy).toHaveBeenCalledWith(

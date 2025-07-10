@@ -9,6 +9,8 @@ export class Client {
     private readonly _clientId: string,
     private readonly _clientSecret: string,
     private readonly _allowedScopes: string[],
+    private readonly _certificateFingerprint?: string, // Optional certificate fingerprint
+    private readonly _requiresCertificate?: boolean, // Whether certificate is required
   ) {}
 
   /**
@@ -30,6 +32,20 @@ export class Client {
    */
   get allowedScopes(): string[] {
     return [...this._allowedScopes]; // Return a copy to prevent mutation
+  }
+
+  /**
+   * Get the certificate fingerprint
+   */
+  get certificateFingerprint(): string | undefined {
+    return this._certificateFingerprint;
+  }
+
+  /**
+   * Check if this client requires certificate authentication
+   */
+  get requiresCertificate(): boolean {
+    return this._requiresCertificate || false;
   }
 
   /**
@@ -58,6 +74,29 @@ export class Client {
    */
   validateCredentials(clientSecret: string): boolean {
     return this._clientSecret === clientSecret;
+  }
+
+  /**
+   * Validate client certificate fingerprint
+   */
+  validateCertificate(providedFingerprint?: string): boolean {
+    // If client doesn't require certificate, always valid
+    if (!this.requiresCertificate) {
+      return true;
+    }
+
+    // If client requires certificate but none provided, invalid
+    if (this.requiresCertificate && !providedFingerprint) {
+      return false;
+    }
+
+    // If client has configured fingerprint, validate it
+    if (this._certificateFingerprint) {
+      return this._certificateFingerprint === providedFingerprint;
+    }
+
+    // If no fingerprint configured but certificate provided, accept any valid certificate
+    return true;
   }
 
   /**
@@ -95,11 +134,15 @@ export class Client {
     clientId: string;
     clientSecret: string;
     allowedScopes: string[];
+    certificateFingerprint?: string;
+    requiresCertificate?: boolean;
   }): Client {
     return new Client(
       config.clientId,
       config.clientSecret,
       config.allowedScopes,
+      config.certificateFingerprint,
+      config.requiresCertificate,
     );
   }
 }

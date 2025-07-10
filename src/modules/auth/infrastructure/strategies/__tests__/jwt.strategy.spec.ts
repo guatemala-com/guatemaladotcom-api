@@ -4,6 +4,11 @@ import { UnauthorizedException } from '@nestjs/common';
 import { JwtStrategy } from '../jwt.strategy';
 import { TokenPayload } from '../../../domain/entities/token.entity';
 
+// Mock fs module
+jest.mock('fs', () => ({
+  readFileSync: jest.fn().mockReturnValue('mock-rsa-key'),
+}));
+
 describe('JwtStrategy', () => {
   let strategy: JwtStrategy;
 
@@ -22,8 +27,8 @@ describe('JwtStrategy', () => {
         .fn()
         .mockImplementation((key: string, defaultValue?: string) => {
           switch (key) {
-            case 'JWT_SECRET':
-              return 'test-secret-key';
+            case 'JWT_PUBLIC_KEY_PATH':
+              return '/mock/path/public.pem';
             case 'JWT_ISSUER':
               return 'test-issuer';
             case 'JWT_AUDIENCE':
@@ -63,7 +68,7 @@ describe('JwtStrategy', () => {
           .fn()
           .mockImplementation((key: string, defaultValue?: string) => {
             switch (key) {
-              case 'JWT_SECRET':
+              case 'JWT_PUBLIC_KEY_PATH':
                 return defaultValue;
               case 'JWT_ISSUER':
                 return defaultValue;
@@ -83,8 +88,7 @@ describe('JwtStrategy', () => {
       // Assert
       expect(newStrategy).toBeDefined();
       expect(mockConfigWithDefaults.get).toHaveBeenCalledWith(
-        'JWT_SECRET',
-        'your-secret-key',
+        'JWT_PUBLIC_KEY_PATH',
       );
       expect(mockConfigWithDefaults.get).toHaveBeenCalledWith(
         'JWT_ISSUER',
@@ -101,8 +105,8 @@ describe('JwtStrategy', () => {
       const mockConfigWithCustom = {
         get: jest.fn().mockImplementation((key: string) => {
           switch (key) {
-            case 'JWT_SECRET':
-              return 'custom-secret-key';
+            case 'JWT_PUBLIC_KEY_PATH':
+              return '/custom/path/public.pem';
             case 'JWT_ISSUER':
               return 'custom-issuer';
             case 'JWT_AUDIENCE':
@@ -121,8 +125,7 @@ describe('JwtStrategy', () => {
       // Assert
       expect(newStrategy).toBeDefined();
       expect(mockConfigWithCustom.get).toHaveBeenCalledWith(
-        'JWT_SECRET',
-        'your-secret-key',
+        'JWT_PUBLIC_KEY_PATH',
       );
       expect(mockConfigWithCustom.get).toHaveBeenCalledWith(
         'JWT_ISSUER',

@@ -8,19 +8,24 @@ import {
   HttpCode,
   HttpStatus,
   BadRequestException,
+  Req,
 } from '@nestjs/common';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { ConfigService } from '@nestjs/config';
+import { RequestWithCertificate } from '../middleware/certificate-validation.middleware';
 import {
   TokenRequestDto,
   TokenResponseDto,
   TokenVerificationRequestDto,
   TokenVerificationResponseDto,
+  RefreshTokenRequestDto,
+  RefreshTokenResponseDto,
 } from '../../application/dtos/token.dto';
 import { ValidateClientUseCase } from '../../application/use-cases/validate-client.use-case';
 import { GenerateTokenUseCase } from '../../application/use-cases/generate-token.use-case';
 import { VerifyTokenUseCase } from '../../application/use-cases/verify-token.use-case';
 import { GenerateClientCredentialsUseCase } from '../../application/use-cases/generate-client-credentials.use-case';
+import { RefreshTokenUseCase } from '../../application/use-cases/refresh-token.use-case';
 
 @Controller('oauth')
 @UseGuards(ThrottlerGuard)
@@ -32,6 +37,7 @@ export class AuthController {
     private readonly generateTokenUseCase: GenerateTokenUseCase,
     private readonly verifyTokenUseCase: VerifyTokenUseCase,
     private readonly generateClientCredentialsUseCase: GenerateClientCredentialsUseCase,
+    private readonly refreshTokenUseCase: RefreshTokenUseCase,
     private readonly configService: ConfigService,
   ) {}
 
@@ -41,6 +47,7 @@ export class AuthController {
   @Post('token')
   async getToken(
     @Body() tokenRequest: TokenRequestDto,
+    @Req() req: RequestWithCertificate,
   ): Promise<TokenResponseDto> {
     this.logger.log(
       `Token request received from client: ${tokenRequest.client_id}`,
@@ -65,6 +72,7 @@ export class AuthController {
       await this.validateClientUseCase.execute({
         clientId: tokenRequest.client_id,
         clientSecret: tokenRequest.client_secret,
+        certificateFingerprint: req.certificateFingerprint,
       });
 
       this.logger.log(
@@ -96,6 +104,7 @@ export class AuthController {
         access_token: tokenResponse.accessToken,
         token_type: tokenResponse.tokenType,
         expires_in: tokenResponse.expiresIn,
+        refresh_token: tokenResponse.refreshToken,
         scope: tokenResponse.scope,
       };
     } catch (error) {
@@ -150,6 +159,46 @@ export class AuthController {
     }
 
     return verificationResult;
+  }
+
+  /**
+   * OAuth 2.0 Refresh Token Endpoint
+   */
+  @Post('refresh')
+  async refreshToken(
+    @Body() refreshRequest: RefreshTokenRequestDto,
+  ): Promise<RefreshTokenResponseDto> {
+    this.logger.log('Refresh token request received');
+
+    // Validate that it's refresh_token flow
+    if (refreshRequest.grant_type !== 'refresh_token') {
+      this.logger.warn(`Unsupported grant type: ${refreshRequest.grant_type}`);
+      throw new BadRequestException(
+        'Only refresh_token grant type is supported for this endpoint',
+      );
+    }
+
+    try {
+      const tokenResponse = await this.refreshTokenUseCase.execute({
+        refreshToken: refreshRequest.refresh_token,
+        scope: refreshRequest.scope,
+      });
+
+      this.logger.log('Refresh token processed successfully');
+
+      return {
+        access_token: tokenResponse.accessToken,
+        token_type: tokenResponse.tokenType,
+        expires_in: tokenResponse.expiresIn,
+        refresh_token: tokenResponse.refreshToken,
+        scope: tokenResponse.scope,
+      };
+    } catch (error) {
+      this.logger.warn(
+        `Refresh token failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+      throw error;
+    }
   }
 
   /**

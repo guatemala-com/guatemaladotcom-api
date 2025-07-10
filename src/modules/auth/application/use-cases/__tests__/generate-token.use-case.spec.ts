@@ -1,11 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import {
   GenerateTokenUseCase,
   GenerateTokenRequest,
 } from '../generate-token.use-case';
 import { ClientRepositoryImpl } from '../../../infrastructure/repositories/client.repository';
 import { TokenRepositoryImpl } from '../../../infrastructure/repositories/token.repository';
+import { RefreshTokenRepositoryImpl } from '../../../infrastructure/repositories/refresh-token.repository';
 import {
   mockClient,
   mockToken,
@@ -17,6 +19,25 @@ import {
   mockTokenRepository,
 } from '../../../__mocks__/repositories.mocks';
 
+// Mock refresh token repository
+const mockRefreshTokenRepository = {
+  save: jest.fn(),
+  findByToken: jest.fn(),
+  findByClientId: jest.fn(),
+  revoke: jest.fn(),
+  revokeAllForClient: jest.fn(),
+  deleteExpired: jest.fn(),
+  deleteByToken: jest.fn(),
+  countActiveForClient: jest.fn(),
+  getAllTokens: jest.fn(),
+  clearAll: jest.fn(),
+};
+
+// Mock config service
+const mockConfigService = {
+  get: jest.fn(),
+};
+
 describe('GenerateTokenUseCase', () => {
   let useCase: GenerateTokenUseCase;
 
@@ -25,6 +46,22 @@ describe('GenerateTokenUseCase', () => {
     jest.clearAllMocks();
     mockClientRepository.findByClientId.mockReset();
     mockTokenRepository.generateToken.mockReset();
+    mockRefreshTokenRepository.save.mockReset();
+    mockConfigService.get.mockReset();
+
+    // Set default config values
+    mockConfigService.get.mockImplementation(
+      (key: string, defaultValue: any) => {
+        switch (key) {
+          case 'REFRESH_TOKEN_ENABLED':
+            return true;
+          case 'REFRESH_TOKEN_EXPIRES_IN':
+            return 7 * 24 * 60 * 60; // 7 days
+          default:
+            return defaultValue;
+        }
+      },
+    );
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -36,6 +73,14 @@ describe('GenerateTokenUseCase', () => {
         {
           provide: TokenRepositoryImpl,
           useValue: mockTokenRepository,
+        },
+        {
+          provide: RefreshTokenRepositoryImpl,
+          useValue: mockRefreshTokenRepository,
+        },
+        {
+          provide: ConfigService,
+          useValue: mockConfigService,
         },
       ],
     }).compile();
@@ -69,8 +114,15 @@ describe('GenerateTokenUseCase', () => {
         accessToken: 'mock-access-token',
         tokenType: 'Bearer',
         expiresIn: 3600,
+        refreshToken: expect.any(String),
         scope: 'read write',
       });
+      expect(mockRefreshTokenRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          _clientId: 'test-client-id',
+          _scope: 'read write',
+        }),
+      );
     });
 
     it('should generate token successfully without scope', async () => {
@@ -96,6 +148,7 @@ describe('GenerateTokenUseCase', () => {
         accessToken: 'mock-access-token',
         tokenType: 'Bearer',
         expiresIn: 3600,
+        refreshToken: expect.any(String),
         scope: undefined,
       });
     });
@@ -124,6 +177,7 @@ describe('GenerateTokenUseCase', () => {
         accessToken: 'mock-access-token',
         tokenType: 'Bearer',
         expiresIn: 3600,
+        refreshToken: expect.any(String),
         scope: undefined,
       });
     });
@@ -152,6 +206,7 @@ describe('GenerateTokenUseCase', () => {
         accessToken: 'mock-access-token',
         tokenType: 'Bearer',
         expiresIn: 3600,
+        refreshToken: expect.any(String),
         scope: undefined,
       });
     });
@@ -314,6 +369,7 @@ describe('GenerateTokenUseCase', () => {
         accessToken: 'mock-access-token',
         tokenType: 'Bearer',
         expiresIn: 3600,
+        refreshToken: expect.any(String),
         scope: 'read write',
       });
     });
