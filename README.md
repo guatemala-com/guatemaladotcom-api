@@ -26,27 +26,18 @@ This project is part of a comprehensive migration from a traditional WordPress w
 - **Architecture**: Clean Architecture
 - **Pattern**: Use Cases
 
-## Environment Variables
+## Security
+
+- **OAuth 2.0 Client Credentials Flow**: Modern authentication standard
+- **RSA Key Authentication**: Secure JWT tokens with public/private keys
+- **Granular Scopes**: Fine-grained access control (read, write, admin)
+- **Rate Limiting**: Prevent abuse and DDoS attacks
+- **CORS Protection**: Control allowed origins
+- **Request Validation**: Validate and sanitize input data
 
 ### OAuth RSA Keys Configuration
 
 The API now uses RSA keys for JWT signing instead of symmetric secrets for enhanced security.
-
-```bash
-# RSA Key Paths (Optional - defaults to keys/ directory)
-JWT_PRIVATE_KEY_PATH=keys/private.pem
-JWT_PUBLIC_KEY_PATH=keys/public.pem
-
-# JWT Configuration
-JWT_EXPIRES_IN=1h
-JWT_ISSUER=guatemala.com
-JWT_AUDIENCE=guatemala-api
-
-# Refresh Token Configuration
-REFRESH_TOKEN_ENABLED=true
-REFRESH_TOKEN_EXPIRES_IN=604800  # 7 days (in seconds)
-REFRESH_TOKEN_ROTATION=true      # Auto-rotate refresh tokens
-```
 
 ### Generating RSA Keys
 
@@ -61,7 +52,7 @@ This will create:
 - `keys/private.pem` - Used by the server to sign tokens
 - `keys/public.pem` - Used to verify tokens (can be shared with clients)
 
-### Security Benefits
+### Benefits
 
 - **Asymmetric Authentication**: Server signs with private key, clients verify with public key
 - **Enhanced Security**: Even if client is compromised, they cannot generate valid tokens
@@ -112,56 +103,6 @@ OAUTH_CLIENTS='[
 2. **Server-to-Server (Optional Certificate)**: Certificate adds extra security layer
 3. **High-Security Client (Required Certificate)**: Certificate is mandatory
 
-#### How Your Web App Authenticates
-
-```typescript
-// Your web app - no certificate needed
-const response = await fetch('/api/oauth/token', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    grant_type: 'client_credentials',
-    client_id: 'webapp-client',
-    client_secret: 'your-secret-here',
-    scope: 'read write',
-  }),
-});
-
-// Using the refresh token to get new access token
-const refreshResponse = await fetch('/api/oauth/refresh', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    grant_type: 'refresh_token',
-    refresh_token: 'your-refresh-token-here',
-    scope: 'read write', // Optional: request specific scopes
-  }),
-});
-
-const { access_token, refresh_token } = await refreshResponse.json();
-```
-
-#### High-Security Client with Certificate
-
-```typescript
-// Server-to-server with certificate
-const httpsAgent = new https.Agent({
-  cert: fs.readFileSync('client-cert.pem'),
-  key: fs.readFileSync('client-key.pem'),
-});
-
-const response = await fetch('/api/oauth/token', {
-  method: 'POST',
-  agent: httpsAgent,
-  body: JSON.stringify({
-    grant_type: 'client_credentials',
-    client_id: 'secure-service',
-    client_secret: 'secure-secret',
-    scope: 'admin',
-  }),
-});
-```
-
 ## Project Setup
 
 ```bash
@@ -179,50 +120,6 @@ $ cp env.example .env
 ### Security Configuration
 
 The API includes multiple security layers for content protection:
-
-#### OAuth 2.0 Authentication
-
-- **OAuth 2.0 Client Credentials Flow**: Modern authentication standard
-- **RSA Key Authentication**: Secure JWT tokens with public/private keys
-- **Granular Scopes**: Fine-grained access control (read, write, admin)
-- **Rate Limiting**: Prevent abuse and DDoS attacks
-- **CORS Protection**: Control allowed origins
-- **Request Validation**: Validate and sanitize input data
-
-For detailed OAuth documentation, see [docs/OAUTH.md](docs/OAUTH.md).
-
-For decorator usage guide, see [docs/DECORATORS.md](docs/DECORATORS.md).
-
-For OAuth 2.0 standards and naming conventions, see [docs/STANDARDS.md](docs/STANDARDS.md).
-
-For DTOs documentation, see [docs/DTOs.md](docs/DTOs.md).
-
-#### Quick OAuth Setup
-
-1. Generate RSA keys:
-
-```bash
-$ node scripts/generate-keys.js
-```
-
-For detailed script documentation, see [scripts/README.md](scripts/README.md).
-
-2. Add the configuration to your `.env` file:
-
-```bash
-JWT_PRIVATE_KEY_PATH=./keys/private.pem
-JWT_PUBLIC_KEY_PATH=./keys/public.pem
-JWT_EXPIRES_IN=1h
-JWT_ISSUER=guatemala.com
-JWT_AUDIENCE=guatemala.com-api
-ALLOWED_ORIGINS=http://localhost:3000,https://guatemala.com
-```
-
-3. Generate client credentials:
-
-```bash
-$ curl http://localhost:3001/api/oauth/generate-client
-```
 
 ## Database Setup
 
