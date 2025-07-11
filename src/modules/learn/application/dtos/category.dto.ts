@@ -13,16 +13,3 @@ export class CategoryResponseDto {
   createdAt: string;
   updatedAt: string;
 }
-
-export class CategoryListResponseDto {
-  success: boolean;
-  data: CategoryResponseDto[];
-  message: string;
-  total: number;
-}
-
-export class CategoryDetailResponseDto {
-  success: boolean;
-  data: CategoryResponseDto;
-  message: string;
-}
