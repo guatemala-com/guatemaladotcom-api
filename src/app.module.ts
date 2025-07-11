@@ -4,6 +4,7 @@ import { HealthCheckModule } from './modules/healthcheck/healthcheck.module';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from './modules/prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { LearnModule } from './modules/learn/learn.module';
 import { OAuthAuthGuard } from './modules/auth/infrastructure/guards/oauth-auth.guard';
 
 @Module({
@@ -13,6 +14,7 @@ import { OAuthAuthGuard } from './modules/auth/infrastructure/guards/oauth-auth.
     }),
     AuthModule,
     HealthCheckModule,
+    LearnModule,
     PrismaModule,
   ],
   controllers: [],

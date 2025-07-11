@@ -4,13 +4,11 @@ import {
   Body,
   Get,
   UseGuards,
-  Logger,
   HttpCode,
   HttpStatus,
   Req,
 } from '@nestjs/common';
 import { ThrottlerGuard } from '@nestjs/throttler';
-import { ConfigService } from '@nestjs/config';
 import { RequestWithCertificate } from '../middleware/certificate-validation.middleware';
 import {
   TokenRequestDto,
@@ -28,14 +26,11 @@ import { RefreshTokenUseCase } from '../../application/use-cases/refresh-token.u
 @Controller('oauth')
 @UseGuards(ThrottlerGuard)
 export class AuthController {
-  private readonly logger = new Logger(AuthController.name);
-
   constructor(
     private readonly generateTokenUseCase: GenerateTokenUseCase,
     private readonly verifyTokenUseCase: VerifyTokenUseCase,
     private readonly generateClientCredentialsUseCase: GenerateClientCredentialsUseCase,
     private readonly refreshTokenUseCase: RefreshTokenUseCase,
-    private readonly configService: ConfigService,
   ) {}
 
   /**
