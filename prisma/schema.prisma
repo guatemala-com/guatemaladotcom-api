@@ -13,7 +13,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// WordPress Posts - Contenido principal del sitio
+// WordPress Posts - Main site content
 model AprPosts {
   id                  BigInt        @id @default(autoincrement()) @map("ID")
   postAuthor          BigInt        @default(0) @map("post_author")
@@ -50,7 +50,7 @@ model AprPosts {
   @@map("apr_posts")
 }
 
-// WordPress Post Meta - Metadatos, custom fields, SEO
+// WordPress Post Meta - Metadata, custom fields, SEO
 model AprPostmeta {
   metaId    BigInt    @id @default(autoincrement()) @map("meta_id")
   postId    BigInt    @default(0) @map("post_id")
@@ -65,7 +65,7 @@ model AprPostmeta {
   @@map("apr_postmeta")
 }
 
-// Learn Meta - Contenido educativo con información de patrocinadores
+// Learn Meta - Educational content with sponsor information
 model AprLearnMeta {
   id                        Int     @id @map("ID")
   url                       String? @db.Text
@@ -86,7 +86,7 @@ model AprLearnMeta {
   @@map("apr_learn_meta")
 }
 
-// WordPress Terms - Términos (categorías, etiquetas, etc.)
+// WordPress Terms - Terms (categories, tags, etc.)
 model AprTerms {
   termId    BigInt @id @default(autoincrement()) @map("term_id")
   name      String @db.VarChar(200)
@@ -102,7 +102,7 @@ model AprTerms {
   @@map("apr_terms")
 }
 
-// WordPress Term Taxonomy - Tipo de término (category, post_tag, etc.)
+// WordPress Term Taxonomy - Term type (category, post_tag, etc.)
 model AprTermTaxonomy {
   termTaxonomyId BigInt @id @default(autoincrement()) @map("term_taxonomy_id")
   termId         BigInt @default(0) @map("term_id")
@@ -120,7 +120,7 @@ model AprTermTaxonomy {
   @@map("apr_term_taxonomy")
 }
 
-// WordPress Term Relationships - Relaciona posts con términos
+// WordPress Term Relationships - Relates posts with terms
 model AprTermRelationships {
   objectId       BigInt @map("object_id")
   termTaxonomyId BigInt @map("term_taxonomy_id")
@@ -135,7 +135,7 @@ model AprTermRelationships {
   @@map("apr_term_relationships")
 }
 
-// WordPress Term Meta - Metadatos de términos
+// WordPress Term Meta - Terms metadata
 model AprTermmeta {
   metaId    BigInt  @id @default(autoincrement()) @map("meta_id")
   termId    BigInt  @map("term_id")

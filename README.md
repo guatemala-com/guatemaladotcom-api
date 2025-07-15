@@ -121,6 +121,13 @@ $ cp env.example .env
 
 The API includes multiple security layers for content protection:
 
+## Documentation
+
+Complete documentation is available in the [`docs/`](./docs/) folder:
+
+- [Database Setup](./docs/DATABASE_SETUP.md) - Complete guide for setting up the MySQL database with Docker
+- [Schema Cleanup](./docs/SCHEMA_CLEANUP.md) - Documentation of Prisma schema cleanup and database structure
+
 ## Database Setup
 
 ```bash
