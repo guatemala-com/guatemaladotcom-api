@@ -1,4 +1,4 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 export interface GenerateClientCredentialsResponse {
@@ -14,6 +14,8 @@ export interface GenerateClientCredentialsResponse {
  */
 @Injectable()
 export class GenerateClientCredentialsUseCase {
+  private readonly logger = new Logger(GenerateClientCredentialsUseCase.name);
+
   constructor(
     @Inject(ConfigService)
     private readonly configService: ConfigService,
@@ -23,6 +25,8 @@ export class GenerateClientCredentialsUseCase {
    * Execute the generate client credentials use case
    */
   execute(): GenerateClientCredentialsResponse {
+    this.logger.log('Client credentials generation requested');
+
     const client_id = `gt_client_${Math.random().toString(36).substring(2, 15)}`;
 
     // In development mode (no OAUTH_CLIENTS configured), always return "development"
@@ -30,6 +34,8 @@ export class GenerateClientCredentialsUseCase {
     const client_secret = oauthClients
       ? `gt_secret_${Math.random().toString(36).substring(2, 15)}`
       : 'development';
+
+    this.logger.log(`Client credentials generated: ${client_id}`);
 
     return { client_id, client_secret };
   }

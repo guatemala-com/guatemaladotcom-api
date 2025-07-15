@@ -1,10 +1,14 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppModule } from '../app.module';
 import { HealthCheckModule } from '../modules/healthcheck/healthcheck.module';
+import { AuthModule } from '../modules/auth/auth.module';
+import { LearnModule } from '../modules/learn/learn.module';
 import { PrismaModule } from '../modules/prisma/prisma.module';
 
 // Mock modules
 jest.mock('../modules/healthcheck/healthcheck.module');
+jest.mock('../modules/auth/auth.module');
+jest.mock('../modules/learn/learn.module');
 jest.mock('../modules/prisma/prisma.module');
 
 describe('AppModule', () => {
@@ -39,6 +43,14 @@ describe('AppModule', () => {
 
     it('should import PrismaModule', () => {
       expect(PrismaModule).toBeDefined();
+    });
+
+    it('should import AuthModule', () => {
+      expect(AuthModule).toBeDefined();
+    });
+
+    it('should import LearnModule', () => {
+      expect(LearnModule).toBeDefined();
     });
   });
 
