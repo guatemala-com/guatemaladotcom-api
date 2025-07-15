@@ -41,6 +41,7 @@ model AprPosts {
   
   // Relations
   metas               AprPostmeta[]
+  termRelationships   AprTermRelationships[]
   
   @@index([postName], map: "post_name")
   @@index([postType, postStatus, postDate, id], map: "type_status_date")
@@ -83,4 +84,68 @@ model AprLearnMeta {
   sponsorExtraData          String? @db.Text @map("sponsor_extra_data")
   
   @@map("apr_learn_meta")
+}
+
+// WordPress Terms - Términos (categorías, etiquetas, etc.)
+model AprTerms {
+  termId    BigInt @id @default(autoincrement()) @map("term_id")
+  name      String @db.VarChar(200)
+  slug      String @db.VarChar(200)
+  termGroup BigInt @default(0) @map("term_group")
+  
+  // Relations
+  taxonomies AprTermTaxonomy[]
+  metas      AprTermmeta[]
+  
+  @@index([name], map: "name")
+  @@index([slug], map: "slug")
+  @@map("apr_terms")
+}
+
+// WordPress Term Taxonomy - Tipo de término (category, post_tag, etc.)
+model AprTermTaxonomy {
+  termTaxonomyId BigInt @id @default(autoincrement()) @map("term_taxonomy_id")
+  termId         BigInt @default(0) @map("term_id")
+  taxonomy       String @db.VarChar(32)
+  description    String @db.LongText
+  parent         BigInt @default(0)
+  count          BigInt @default(0)
+  
+  // Relations
+  term          AprTerms               @relation(fields: [termId], references: [termId])
+  relationships AprTermRelationships[]
+  
+  @@index([termId, taxonomy], map: "term_id_taxonomy")
+  @@index([taxonomy], map: "taxonomy")
+  @@map("apr_term_taxonomy")
+}
+
+// WordPress Term Relationships - Relaciona posts con términos
+model AprTermRelationships {
+  objectId       BigInt @map("object_id")
+  termTaxonomyId BigInt @map("term_taxonomy_id")
+  termOrder      Int    @default(0) @map("term_order")
+  
+  // Relations
+  post         AprPosts        @relation(fields: [objectId], references: [id])
+  termTaxonomy AprTermTaxonomy @relation(fields: [termTaxonomyId], references: [termTaxonomyId])
+  
+  @@id([objectId, termTaxonomyId])
+  @@index([termTaxonomyId], map: "term_taxonomy_id")
+  @@map("apr_term_relationships")
+}
+
+// WordPress Term Meta - Metadatos de términos
+model AprTermmeta {
+  metaId    BigInt  @id @default(autoincrement()) @map("meta_id")
+  termId    BigInt  @map("term_id")
+  metaKey   String? @db.VarChar(255) @map("meta_key")
+  metaValue String? @db.LongText @map("meta_value")
+  
+  // Relations
+  term AprTerms @relation(fields: [termId], references: [termId])
+  
+  @@index([termId], map: "term_id")
+  @@index([metaKey], map: "meta_key")
+  @@map("apr_termmeta")
 }

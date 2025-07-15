@@ -5,13 +5,6 @@
 **Fecha**: 2025-07-10  
 **Objetivo**: Alinear el esquema de Prisma con la estructura real de la base de datos y eliminar modelos innecesarios.
 
-## Análisis de la Base de Datos Real
-
-**Fuente**: Dump SQL `/Users/marcolee/Code/dumps/aprende_db-020725.sql`  
-**Registros principales**:
-- `apr_posts`: 56,977 posts
-- `apr_postmeta`: 759,847 metadatos
-- `apr_learn_meta`: 5,983 registros de contenido educativo
 
 ## Modelos Eliminados
 
