@@ -12,10 +12,10 @@ import { OAuthAuthGuard } from './modules/auth/infrastructure/guards/oauth-auth.
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    PrismaModule,
     AuthModule,
     HealthCheckModule,
     LearnModule,
-    PrismaModule,
   ],
   controllers: [],
   providers: [
