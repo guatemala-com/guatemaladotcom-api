@@ -13,63 +13,139 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model AprLearnMeta {
-  id          Int     @id @map("ID")
-  url         String? @db.Text
-  thumbnailId Int?
-  authorId    Int?
-  authorName  String? @db.VarChar(255)
-  images      String? @db.Text
-  isSponsored Boolean @default(false)
-}
-
-model AprPostmeta {
-  metaId    BigInt    @id @default(autoincrement())
-  postId    BigInt
-  metaKey   String?   @db.VarChar(255)
-  metaValue String?   @db.LongText
-  // Relations
-  post      AprPosts? @relation(fields: [postId], references: [id])
-}
-
-// TODO: check if we need all these fields
-// TODO: add seo fields
+// WordPress Posts - Main site content
 model AprPosts {
   id                  BigInt        @id @default(autoincrement()) @map("ID")
-  postAuthor          BigInt        @default(0)
-  postDate            DateTime?
-  postDateGmt         DateTime?
-  postContent         String        @db.LongText
-  postTitle           String        @db.Text
-  postExcerpt         String        @db.Text
-  postStatus          String        @default("publish") @db.VarChar(20)
-  commentStatus       String        @default("open") @db.VarChar(20)
-  pingStatus          String        @default("open") @db.VarChar(20)
-  postPassword        String        @db.VarChar(255)
-  postName            String        @db.VarChar(200)
-  toPing              String        @db.Text
-  pinged              String        @db.Text
-  postModified        DateTime?
-  postModifiedGmt     DateTime?
-  postContentFiltered String        @db.LongText
-  postParent          BigInt        @default(0)
-  guid                String        @db.VarChar(255)
-  menuOrder           Int           @default(0)
-  postType            String        @default("post") @db.VarChar(20)
-  postMimeType        String        @db.VarChar(100)
-  commentCount        BigInt        @default(0)
+  postAuthor          BigInt        @default(0) @map("post_author")
+  postDate            DateTime      @default(dbgenerated("'0000-00-00 00:00:00'")) @map("post_date")
+  postDateGmt         DateTime      @default(dbgenerated("'0000-00-00 00:00:00'")) @map("post_date_gmt")
+  postContent         String        @db.LongText @map("post_content")
+  postTitle           String        @db.Text @map("post_title")
+  postExcerpt         String        @db.Text @map("post_excerpt")
+  postStatus          String        @default("publish") @db.VarChar(20) @map("post_status")
+  commentStatus       String        @default("open") @db.VarChar(20) @map("comment_status")
+  pingStatus          String        @default("open") @db.VarChar(20) @map("ping_status")
+  postPassword        String        @default("") @db.VarChar(255) @map("post_password")
+  postName            String        @default("") @db.VarChar(200) @map("post_name")
+  toPing              String        @db.Text @map("to_ping")
+  pinged              String        @db.Text @map("pinged")
+  postModified        DateTime      @default(dbgenerated("'0000-00-00 00:00:00'")) @map("post_modified")
+  postModifiedGmt     DateTime      @default(dbgenerated("'0000-00-00 00:00:00'")) @map("post_modified_gmt")
+  postContentFiltered String        @db.LongText @map("post_content_filtered")
+  postParent          BigInt        @default(0) @map("post_parent")
+  guid                String        @default("") @db.VarChar(255)
+  menuOrder           Int           @default(0) @map("menu_order")
+  postType            String        @default("post") @db.VarChar(20) @map("post_type")
+  postMimeType        String        @default("") @db.VarChar(100) @map("post_mime_type")
+  commentCount        BigInt        @default(0) @map("comment_count")
+  
+  // Relations
   metas               AprPostmeta[]
+  termRelationships   AprTermRelationships[]
+  
+  @@index([postName], map: "post_name")
+  @@index([postType, postStatus, postDate, id], map: "type_status_date")
+  @@index([postParent], map: "post_parent")
+  @@index([postAuthor], map: "post_author")
+  @@map("apr_posts")
 }
 
-model AprUsers {
-  id                BigInt    @id @default(autoincrement()) @map("ID")
-  userLogin         String    @db.VarChar(60)
-  userPass          String    @db.VarChar(255)
-  userNicename      String    @db.VarChar(50)
-  userEmail         String    @db.VarChar(100)
-  userUrl           String    @db.VarChar(100)
-  userRegistered    DateTime?
-  userActivationKey String    @db.VarChar(255)
-  userStatus        Int       @default(0)
-  displayName       String    @db.VarChar(250)
+// WordPress Post Meta - Metadata, custom fields, SEO
+model AprPostmeta {
+  metaId    BigInt    @id @default(autoincrement()) @map("meta_id")
+  postId    BigInt    @default(0) @map("post_id")
+  metaKey   String?   @db.VarChar(255) @map("meta_key")
+  metaValue String?   @db.LongText @map("meta_value")
+  
+  // Relations
+  post      AprPosts? @relation(fields: [postId], references: [id])
+  
+  @@index([postId], map: "post_id")
+  @@index([metaKey], map: "meta_key")
+  @@map("apr_postmeta")
+}
+
+// Learn Meta - Educational content with sponsor information
+model AprLearnMeta {
+  id                        Int     @id @map("ID")
+  url                       String? @db.Text
+  thumbnailId               Int?    @map("thumbnail_id")
+  authorId                  Int?    @map("author_id")
+  authorName                String? @db.VarChar(255) @map("author_name")
+  images                    String? @db.Text
+  isSponsored               Boolean @default(false) @map("is_sponsored")
+  sponsorName               String? @db.VarChar(255) @map("sponsor_name")
+  sponsorUrl                String? @db.Text @map("sponsor_url")
+  sponsorImage              Int?    @default(0) @map("sponsor_image")
+  sponsorImageSidebarUrl    String? @db.Text @map("sponsor_image_sidebar_url")
+  sponsorImageSidebar       Int?    @default(0) @map("sponsor_image_sidebar")
+  sponsorImageContentUrl    String? @db.Text @map("sponsor_image_content_url")
+  sponsorImageContent       Int?    @default(0) @map("sponsor_image_content")
+  sponsorExtraData          String? @db.Text @map("sponsor_extra_data")
+  
+  @@map("apr_learn_meta")
+}
+
+// WordPress Terms - Terms (categories, tags, etc.)
+model AprTerms {
+  termId    BigInt @id @default(autoincrement()) @map("term_id")
+  name      String @db.VarChar(200)
+  slug      String @db.VarChar(200)
+  termGroup BigInt @default(0) @map("term_group")
+  
+  // Relations
+  taxonomies AprTermTaxonomy[]
+  metas      AprTermmeta[]
+  
+  @@index([name], map: "name")
+  @@index([slug], map: "slug")
+  @@map("apr_terms")
+}
+
+// WordPress Term Taxonomy - Term type (category, post_tag, etc.)
+model AprTermTaxonomy {
+  termTaxonomyId BigInt @id @default(autoincrement()) @map("term_taxonomy_id")
+  termId         BigInt @default(0) @map("term_id")
+  taxonomy       String @db.VarChar(32)
+  description    String @db.LongText
+  parent         BigInt @default(0)
+  count          BigInt @default(0)
+  
+  // Relations
+  term          AprTerms               @relation(fields: [termId], references: [termId])
+  relationships AprTermRelationships[]
+  
+  @@index([termId, taxonomy], map: "term_id_taxonomy")
+  @@index([taxonomy], map: "taxonomy")
+  @@map("apr_term_taxonomy")
+}
+
+// WordPress Term Relationships - Relates posts with terms
+model AprTermRelationships {
+  objectId       BigInt @map("object_id")
+  termTaxonomyId BigInt @map("term_taxonomy_id")
+  termOrder      Int    @default(0) @map("term_order")
+  
+  // Relations
+  post         AprPosts        @relation(fields: [objectId], references: [id])
+  termTaxonomy AprTermTaxonomy @relation(fields: [termTaxonomyId], references: [termTaxonomyId])
+  
+  @@id([objectId, termTaxonomyId])
+  @@index([termTaxonomyId], map: "term_taxonomy_id")
+  @@map("apr_term_relationships")
+}
+
+// WordPress Term Meta - Terms metadata
+model AprTermmeta {
+  metaId    BigInt  @id @default(autoincrement()) @map("meta_id")
+  termId    BigInt  @map("term_id")
+  metaKey   String? @db.VarChar(255) @map("meta_key")
+  metaValue String? @db.LongText @map("meta_value")
+  
+  // Relations
+  term AprTerms @relation(fields: [termId], references: [termId])
+  
+  @@index([termId], map: "term_id")
+  @@index([metaKey], map: "meta_key")
+  @@map("apr_termmeta")
 }

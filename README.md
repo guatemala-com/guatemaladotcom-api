@@ -6,6 +6,24 @@ A NestJS-based API for the Guatemala.com WordPress headless migration project.
 
 This project is part of a comprehensive migration from a traditional WordPress website to a headless architecture. We're using WordPress as a Content Management System (CMS) while building a modern Next.js frontend application. This API serves as the backend layer that connects the WordPress CMS with the frontend application.
 
+## Quick Start
+
+1. **Database Setup**: Follow the [Database Setup](./docs/DATABASE_SETUP.md) guide to configure your local database
+2. **Environment**: Create your `.env` file with the required variables (`cp .env.example .env`)
+3. **Prisma Client**: Generate the Prisma client with `pnpm prisma generate`
+4. **Development**: Start the development server with `pnpm run start:dev`
+
+## Documentation
+
+Complete documentation is available in the [`docs/`](./docs/) folder:
+
+### Setup & Configuration
+- [Database Setup](./docs/DATABASE_SETUP.md) - Complete guide for setting up the MySQL database with Docker
+- [Schema Cleanup](./docs/SCHEMA_CLEANUP.md) - Documentation of Prisma schema cleanup and database structure
+
+### Additional Resources
+- [Test Documentation](./test/README.md) - Testing setup and utilities
+
 ## Architecture
 
 - **Backend**: NestJS with TypeScript
@@ -25,6 +43,14 @@ This project is part of a comprehensive migration from a traditional WordPress w
 - **Testing**: Jest
 - **Architecture**: Clean Architecture
 - **Pattern**: Use Cases
+
+## Key Features
+
+- **OAuth 2.0 Authentication**: Client credentials flow with RSA keys
+- **Clean Architecture**: Separation of concerns with use cases
+- **Prisma ORM**: Type-safe database operations
+- **Comprehensive Testing**: Unit and integration tests
+- **Docker Support**: MySQL database with automatic initialization
 
 ## Security
 
@@ -120,6 +146,13 @@ $ cp env.example .env
 ### Security Configuration
 
 The API includes multiple security layers for content protection:
+
+## Documentation
+
+Complete documentation is available in the [`docs/`](./docs/) folder:
+
+- [Database Setup](./docs/DATABASE_SETUP.md) - Complete guide for setting up the MySQL database with Docker
+- [Schema Cleanup](./docs/SCHEMA_CLEANUP.md) - Documentation of Prisma schema cleanup and database structure
 
 ## Database Setup
 
