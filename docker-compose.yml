@@ -15,7 +15,7 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
       # Montar el dump SQL para inicialización
-      - /Users/marcolee/Code/dumps/aprende_db-020725.sql:/docker-entrypoint-initdb.d/aprende_db.sql:ro
+      - ${SQL_DUMP_PATH}:/docker-entrypoint-initdb.d/aprende_db.sql:ro
     networks:
       - guatemaladotcom-network
     command: --default-authentication-plugin=mysql_native_password --max_allowed_packet=1073741824
