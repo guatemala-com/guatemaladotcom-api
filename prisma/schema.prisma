@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,139 +7,581 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// WordPress Posts - Main site content
 model AprPosts {
-  id                  BigInt        @id @default(autoincrement()) @map("ID")
-  postAuthor          BigInt        @default(0) @map("post_author")
-  postDate            DateTime      @default(dbgenerated("'0000-00-00 00:00:00'")) @map("post_date")
-  postDateGmt         DateTime      @default(dbgenerated("'0000-00-00 00:00:00'")) @map("post_date_gmt")
-  postContent         String        @db.LongText @map("post_content")
-  postTitle           String        @db.Text @map("post_title")
-  postExcerpt         String        @db.Text @map("post_excerpt")
-  postStatus          String        @default("publish") @db.VarChar(20) @map("post_status")
-  commentStatus       String        @default("open") @db.VarChar(20) @map("comment_status")
-  pingStatus          String        @default("open") @db.VarChar(20) @map("ping_status")
-  postPassword        String        @default("") @db.VarChar(255) @map("post_password")
-  postName            String        @default("") @db.VarChar(200) @map("post_name")
-  toPing              String        @db.Text @map("to_ping")
-  pinged              String        @db.Text @map("pinged")
-  postModified        DateTime      @default(dbgenerated("'0000-00-00 00:00:00'")) @map("post_modified")
-  postModifiedGmt     DateTime      @default(dbgenerated("'0000-00-00 00:00:00'")) @map("post_modified_gmt")
-  postContentFiltered String        @db.LongText @map("post_content_filtered")
-  postParent          BigInt        @default(0) @map("post_parent")
-  guid                String        @default("") @db.VarChar(255)
-  menuOrder           Int           @default(0) @map("menu_order")
-  postType            String        @default("post") @db.VarChar(20) @map("post_type")
-  postMimeType        String        @default("") @db.VarChar(100) @map("post_mime_type")
-  commentCount        BigInt        @default(0) @map("comment_count")
-  
+  id                  BigInt   @id @default(autoincrement()) @map("ID") @db.UnsignedBigInt
+  postAuthor          BigInt   @default(0) @map("post_author") @db.UnsignedBigInt
+  postDate            DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @map("post_date") @db.DateTime(0)
+  postDateGmt         DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @map("post_date_gmt") @db.DateTime(0)
+  postContent         String   @map("post_content") @db.LongText
+  postTitle           String   @map("post_title") @db.Text
+  postExcerpt         String   @map("post_excerpt") @db.Text
+  postStatus          String   @default("publish") @map("post_status") @db.VarChar(20)
+  commentStatus       String   @default("open") @map("comment_status") @db.VarChar(20)
+  pingStatus          String   @default("open") @map("ping_status") @db.VarChar(20)
+  postPassword        String   @default("") @map("post_password") @db.VarChar(255)
+  postName            String   @default("") @map("post_name") @db.VarChar(200)
+  toPing              String   @map("to_ping") @db.Text
+  pinged              String   @map("pinged") @db.Text
+  postModified        DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @map("post_modified") @db.DateTime(0)
+  postModifiedGmt     DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @map("post_modified_gmt") @db.DateTime(0)
+  postContentFiltered String   @map("post_content_filtered") @db.LongText
+  postParent          BigInt   @default(0) @map("post_parent") @db.UnsignedBigInt
+  guid                String   @default("") @db.VarChar(255)
+  menuOrder           Int      @default(0) @map("menu_order")
+  postType            String   @default("post") @map("post_type") @db.VarChar(20)
+  postMimeType        String   @default("") @map("post_mime_type") @db.VarChar(100)
+  commentCount        BigInt   @default(0) @map("comment_count")
+
   // Relations
-  metas               AprPostmeta[]
-  termRelationships   AprTermRelationships[]
-  
-  @@index([postName], map: "post_name")
+  metas               AprPostmeta[]          @relation("PostMetas")
+  termRelationships   AprTermRelationships[] @relation("PostTerms")
+
+  @@index([postName(length: 191)], map: "post_name")
   @@index([postType, postStatus, postDate, id], map: "type_status_date")
   @@index([postParent], map: "post_parent")
   @@index([postAuthor], map: "post_author")
   @@map("apr_posts")
 }
 
-// WordPress Post Meta - Metadata, custom fields, SEO
 model AprPostmeta {
-  metaId    BigInt    @id @default(autoincrement()) @map("meta_id")
-  postId    BigInt    @default(0) @map("post_id")
-  metaKey   String?   @db.VarChar(255) @map("meta_key")
-  metaValue String?   @db.LongText @map("meta_value")
-  
+  metaId    BigInt  @id @default(autoincrement()) @map("meta_id") @db.UnsignedBigInt
+  postId    BigInt  @default(0) @map("post_id") @db.UnsignedBigInt
+  metaKey   String? @map("meta_key") @db.VarChar(255)
+  metaValue String? @map("meta_value") @db.LongText
+
   // Relations
-  post      AprPosts? @relation(fields: [postId], references: [id])
-  
+  post      AprPosts @relation("PostMetas", fields: [postId], references: [id])
+
   @@index([postId], map: "post_id")
-  @@index([metaKey], map: "meta_key")
+  @@index([metaKey(length: 191)], map: "meta_key")
   @@map("apr_postmeta")
 }
 
-// Learn Meta - Educational content with sponsor information
 model AprLearnMeta {
-  id                        Int     @id @map("ID")
-  url                       String? @db.Text
-  thumbnailId               Int?    @map("thumbnail_id")
-  authorId                  Int?    @map("author_id")
-  authorName                String? @db.VarChar(255) @map("author_name")
-  images                    String? @db.Text
-  isSponsored               Boolean @default(false) @map("is_sponsored")
-  sponsorName               String? @db.VarChar(255) @map("sponsor_name")
-  sponsorUrl                String? @db.Text @map("sponsor_url")
-  sponsorImage              Int?    @default(0) @map("sponsor_image")
-  sponsorImageSidebarUrl    String? @db.Text @map("sponsor_image_sidebar_url")
-  sponsorImageSidebar       Int?    @default(0) @map("sponsor_image_sidebar")
-  sponsorImageContentUrl    String? @db.Text @map("sponsor_image_content_url")
-  sponsorImageContent       Int?    @default(0) @map("sponsor_image_content")
-  sponsorExtraData          String? @db.Text @map("sponsor_extra_data")
-  
+  id                     Int      @id @map("ID") @db.UnsignedInt
+  url                    String?  @db.Text
+  thumbnailId            Int?     @map("thumbnail_id")
+  authorId               Int?     @map("author_id")
+  authorName             String?  @map("author_name") @db.VarChar(255)
+  images                 String?  @db.Text
+  isSponsored            Boolean? @default(false) @map("is_sponsored")
+  sponsorName            String?  @map("sponsor_name") @db.VarChar(255)
+  sponsorUrl             String?  @map("sponsor_url") @db.Text
+  sponsorImage           Int?     @default(0) @map("sponsor_image")
+  sponsorImageSidebarUrl String?  @map("sponsor_image_sidebar_url") @db.Text
+  sponsorImageSidebar    Int?     @default(0) @map("sponsor_image_sidebar")
+  sponsorImageContentUrl String?  @map("sponsor_image_content_url") @db.Text
+  sponsorImageContent    Int?     @default(0) @map("sponsor_image_content")
+  sponsorExtraData       String?  @map("sponsor_extra_data") @db.Text
+
   @@map("apr_learn_meta")
 }
 
-// WordPress Terms - Terms (categories, tags, etc.)
 model AprTerms {
-  termId    BigInt @id @default(autoincrement()) @map("term_id")
-  name      String @db.VarChar(200)
-  slug      String @db.VarChar(200)
+  termId    BigInt @id @default(autoincrement()) @map("term_id") @db.UnsignedBigInt
+  name      String @default("") @db.VarChar(200)
+  slug      String @default("") @db.VarChar(200)
   termGroup BigInt @default(0) @map("term_group")
-  
+
   // Relations
-  taxonomies AprTermTaxonomy[]
-  metas      AprTermmeta[]
-  
-  @@index([name], map: "name")
-  @@index([slug], map: "slug")
+  taxonomies AprTermTaxonomy[] @relation("TermTaxonomyTerm")
+
+  @@index([name(length: 191)], map: "name")
+  @@index([slug(length: 191)], map: "slug")
   @@map("apr_terms")
 }
 
-// WordPress Term Taxonomy - Term type (category, post_tag, etc.)
 model AprTermTaxonomy {
-  termTaxonomyId BigInt @id @default(autoincrement()) @map("term_taxonomy_id")
-  termId         BigInt @default(0) @map("term_id")
-  taxonomy       String @db.VarChar(32)
+  termTaxonomyId BigInt @id @default(autoincrement()) @map("term_taxonomy_id") @db.UnsignedBigInt
+  termId         BigInt @default(0) @map("term_id") @db.UnsignedBigInt
+  taxonomy       String @default("") @db.VarChar(32)
   description    String @db.LongText
-  parent         BigInt @default(0)
+  parent         BigInt @default(0) @db.UnsignedBigInt
   count          BigInt @default(0)
-  
+
   // Relations
-  term          AprTerms               @relation(fields: [termId], references: [termId])
-  relationships AprTermRelationships[]
-  
-  @@index([termId, taxonomy], map: "term_id_taxonomy")
+  term           AprTerms               @relation("TermTaxonomyTerm", fields: [termId], references: [termId])
+  relationships  AprTermRelationships[] @relation("TermRelations")
+
+  @@unique([termId, taxonomy], map: "term_id_taxonomy")
   @@index([taxonomy], map: "taxonomy")
   @@map("apr_term_taxonomy")
 }
 
-// WordPress Term Relationships - Relates posts with terms
 model AprTermRelationships {
-  objectId       BigInt @map("object_id")
-  termTaxonomyId BigInt @map("term_taxonomy_id")
+  objectId       BigInt @default(0) @map("object_id") @db.UnsignedBigInt
+  termTaxonomyId BigInt @default(0) @map("term_taxonomy_id") @db.UnsignedBigInt
   termOrder      Int    @default(0) @map("term_order")
-  
+
   // Relations
-  post         AprPosts        @relation(fields: [objectId], references: [id])
-  termTaxonomy AprTermTaxonomy @relation(fields: [termTaxonomyId], references: [termTaxonomyId])
-  
+  post           AprPosts        @relation("PostTerms", fields: [objectId], references: [id])
+  termTaxonomy   AprTermTaxonomy @relation("TermRelations", fields: [termTaxonomyId], references: [termTaxonomyId])
+
   @@id([objectId, termTaxonomyId])
   @@index([termTaxonomyId], map: "term_taxonomy_id")
   @@map("apr_term_relationships")
 }
 
-// WordPress Term Meta - Terms metadata
 model AprTermmeta {
-  metaId    BigInt  @id @default(autoincrement()) @map("meta_id")
-  termId    BigInt  @map("term_id")
-  metaKey   String? @db.VarChar(255) @map("meta_key")
-  metaValue String? @db.LongText @map("meta_value")
-  
-  // Relations
-  term AprTerms @relation(fields: [termId], references: [termId])
-  
+  metaId    BigInt  @id @default(autoincrement()) @map("meta_id") @db.UnsignedBigInt
+  termId    BigInt  @default(0) @map("term_id") @db.UnsignedBigInt
+  metaKey   String? @map("meta_key") @db.VarChar(255)
+  metaValue String? @map("meta_value") @db.LongText
+
   @@index([termId], map: "term_id")
-  @@index([metaKey], map: "meta_key")
+  @@index([metaKey(length: 191)], map: "meta_key")
   @@map("apr_termmeta")
+}
+
+model apr_actionscheduler_actions {
+  action_id            BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  hook                 String
+  status               String    @db.VarChar(20)
+  scheduled_date_gmt   DateTime? @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  scheduled_date_local DateTime? @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  priority             Int       @default(10) @db.UnsignedTinyInt
+  args                 String?
+  schedule             String?   @db.LongText
+  group_id             BigInt    @default(0) @db.UnsignedBigInt
+  attempts             Int       @default(0)
+  last_attempt_gmt     DateTime? @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  last_attempt_local   DateTime? @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  claim_id             BigInt    @default(0) @db.UnsignedBigInt
+  extended_args        String?   @db.VarChar(8000)
+
+  @@index([args], map: "args")
+  @@index([claim_id, status, scheduled_date_gmt], map: "claim_id_status_scheduled_date_gmt")
+  @@index([group_id], map: "group_id")
+  @@index([hook], map: "hook")
+  @@index([last_attempt_gmt], map: "last_attempt_gmt")
+  @@index([scheduled_date_gmt], map: "scheduled_date_gmt")
+  @@index([status], map: "status")
+}
+
+model apr_actionscheduler_claims {
+  claim_id         BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  date_created_gmt DateTime? @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+
+  @@index([date_created_gmt], map: "date_created_gmt")
+}
+
+model apr_actionscheduler_groups {
+  group_id BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+  slug     String @db.VarChar(255)
+
+  @@index([slug(length: 191)], map: "slug")
+}
+
+model apr_actionscheduler_logs {
+  log_id         BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  action_id      BigInt    @db.UnsignedBigInt
+  message        String    @db.Text
+  log_date_gmt   DateTime? @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  log_date_local DateTime? @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+
+  @@index([action_id], map: "action_id")
+  @@index([log_date_gmt], map: "log_date_gmt")
+}
+
+model apr_alm {
+  id              Int    @unique(map: "id") @default(autoincrement()) @db.MediumInt
+  name            String @db.Text
+  repeaterDefault String @db.LongText
+  repeaterType    String @db.Text
+}
+
+model apr_as3cf_items {
+  id                   BigInt  @id @default(autoincrement()) @db.UnsignedBigInt
+  provider             String  @db.VarChar(18)
+  region               String  @db.VarChar(255)
+  bucket               String  @db.VarChar(255)
+  path                 String  @db.VarChar(1024)
+  original_path        String  @db.VarChar(1024)
+  is_private           Boolean @default(false)
+  source_type          String  @db.VarChar(18)
+  source_id            BigInt  @db.UnsignedBigInt
+  source_path          String  @db.VarChar(1024)
+  original_source_path String  @db.VarChar(1024)
+  extra_info           String? @db.LongText
+  originator           Int     @default(0) @db.UnsignedTinyInt
+  is_verified          Boolean @default(true)
+
+  @@unique([is_verified, originator, id], map: "uidx_is_verified_originator")
+  @@unique([original_path(length: 190), id], map: "uidx_original_path")
+  @@unique([original_source_path(length: 190), id], map: "uidx_original_source_path")
+  @@unique([path(length: 190), id], map: "uidx_path")
+  @@unique([provider, bucket(length: 190), id], map: "uidx_provider_bucket")
+  @@unique([source_type, source_id], map: "uidx_source")
+  @@unique([source_path(length: 190), id], map: "uidx_source_path")
+}
+
+model apr_commentmeta {
+  meta_id    BigInt  @id @default(autoincrement()) @db.UnsignedBigInt
+  comment_id BigInt  @default(0) @db.UnsignedBigInt
+  meta_key   String? @db.VarChar(255)
+  meta_value String? @db.LongText
+
+  @@index([comment_id], map: "comment_id")
+  @@index([meta_key(length: 191)], map: "meta_key")
+}
+
+model apr_comments {
+  comment_ID           BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  comment_post_ID      BigInt   @default(0) @db.UnsignedBigInt
+  comment_author       String   @db.TinyText
+  comment_author_email String   @default("") @db.VarChar(100)
+  comment_author_url   String   @default("") @db.VarChar(200)
+  comment_author_IP    String   @default("") @db.VarChar(100)
+  comment_date         DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  comment_date_gmt     DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  comment_content      String   @db.Text
+  comment_karma        Int      @default(0)
+  comment_approved     String   @default("1") @db.VarChar(20)
+  comment_agent        String   @default("") @db.VarChar(255)
+  comment_type         String   @default("comment") @db.VarChar(20)
+  comment_parent       BigInt   @default(0) @db.UnsignedBigInt
+  user_id              BigInt   @default(0) @db.UnsignedBigInt
+
+  @@index([comment_approved, comment_date_gmt], map: "comment_approved_date_gmt")
+  @@index([comment_author_email(length: 10)], map: "comment_author_email")
+  @@index([comment_date_gmt], map: "comment_date_gmt")
+  @@index([comment_parent], map: "comment_parent")
+  @@index([comment_post_ID], map: "comment_post_ID")
+}
+
+model apr_links {
+  link_id          BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  link_url         String   @default("") @db.VarChar(255)
+  link_name        String   @default("") @db.VarChar(255)
+  link_image       String   @default("") @db.VarChar(255)
+  link_target      String   @default("") @db.VarChar(25)
+  link_description String   @default("") @db.VarChar(255)
+  link_visible     String   @default("Y") @db.VarChar(20)
+  link_owner       BigInt   @default(1) @db.UnsignedBigInt
+  link_rating      Int      @default(0)
+  link_updated     DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  link_rel         String   @default("") @db.VarChar(255)
+  link_notes       String   @db.MediumText
+  link_rss         String   @default("") @db.VarChar(255)
+
+  @@index([link_visible], map: "link_visible")
+}
+
+model apr_moppm_user_report_table {
+  id          Int     @unique(map: "id") @default(autoincrement())
+  user_email  String  @db.MediumText
+  Login_time  String? @db.MediumText
+  Logout_time String? @db.MediumText
+}
+
+model apr_options {
+  option_id    BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+  option_name  String @unique(map: "option_name") @default("")
+  option_value String @db.LongText
+  autoload     String @default("yes") @db.VarChar(20)
+
+  @@index([autoload], map: "autoload")
+}
+
+model apr_rank_math_404_logs {
+  id             BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  uri            String   @db.VarChar(255)
+  accessed       DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  times_accessed BigInt   @default(1) @db.UnsignedBigInt
+  referer        String   @default("") @db.VarChar(255)
+  user_agent     String   @default("") @db.VarChar(255)
+
+  @@index([uri(length: 191)], map: "uri")
+}
+
+model apr_rank_math_analytics_ga {
+  id        BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  page      String   @db.VarChar(500)
+  created   DateTime @db.Timestamp(0)
+  pageviews Int      @db.MediumInt
+  visitors  Int      @db.MediumInt
+
+  @@index([page(length: 190)], map: "analytics_object_analytics")
+}
+
+model apr_rank_math_analytics_gsc {
+  id          BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  created     DateTime @db.Timestamp(0)
+  query       String   @db.VarChar(1000)
+  page        String   @db.VarChar(500)
+  clicks      Int      @db.MediumInt
+  impressions Int      @db.MediumInt
+  position    Float
+  ctr         Float
+
+  @@index([page(length: 190)], map: "analytics_page")
+  @@index([query(length: 190)], map: "analytics_query")
+  @@index([clicks], map: "clicks")
+  @@index([position], map: "rank_position")
+}
+
+model apr_rank_math_analytics_inspections {
+  id                       BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  page                     String   @db.VarChar(500)
+  created                  DateTime @db.Timestamp(0)
+  index_verdict            String   @db.VarChar(64)
+  indexing_state           String   @db.VarChar(64)
+  coverage_state           String   @db.Text
+  page_fetch_state         String   @db.VarChar(64)
+  robots_txt_state         String   @db.VarChar(64)
+  mobile_usability_verdict String   @db.VarChar(64)
+  mobile_usability_issues  String   @db.LongText
+  rich_results_verdict     String   @db.VarChar(64)
+  rich_results_items       String   @db.LongText
+  last_crawl_time          DateTime @db.Timestamp(0)
+  crawled_as               String   @db.VarChar(64)
+  google_canonical         String   @db.Text
+  user_canonical           String   @db.Text
+  sitemap                  String   @db.Text
+  referring_urls           String   @db.LongText
+  raw_api_response         String   @db.LongText
+
+  @@index([page(length: 190)], map: "analytics_object_page")
+  @@index([created], map: "created")
+  @@index([index_verdict], map: "index_verdict")
+  @@index([mobile_usability_verdict], map: "mobile_usability_verdict")
+  @@index([page_fetch_state], map: "page_fetch_state")
+  @@index([rich_results_verdict], map: "rich_results_verdict")
+  @@index([robots_txt_state], map: "robots_txt_state")
+}
+
+model apr_rank_math_analytics_keyword_manager {
+  id         BigInt  @id @default(autoincrement()) @db.UnsignedBigInt
+  keyword    String  @db.VarChar(1000)
+  collection String? @db.VarChar(200)
+  is_active  Boolean @default(true)
+}
+
+model apr_rank_math_analytics_objects {
+  id                  BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  created             DateTime  @db.Timestamp(0)
+  title               String    @db.Text
+  page                String    @db.VarChar(500)
+  object_type         String    @db.VarChar(100)
+  object_subtype      String    @db.VarChar(100)
+  object_id           BigInt    @db.UnsignedBigInt
+  primary_key         String    @db.VarChar(255)
+  seo_score           Int       @default(0) @db.TinyInt
+  page_score          Int       @default(0) @db.TinyInt
+  is_indexable        Boolean   @default(true)
+  schemas_in_use      String?   @db.VarChar(500)
+  desktop_interactive Float?    @default(0)
+  desktop_pagescore   Float?    @default(0)
+  mobile_interactive  Float?    @default(0)
+  mobile_pagescore    Float?    @default(0)
+  pagespeed_refreshed DateTime? @db.Timestamp(0)
+
+  @@index([page(length: 190)], map: "analytics_object_page")
+}
+
+model apr_rank_math_internal_links {
+  id             BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+  url            String @db.VarChar(255)
+  post_id        BigInt @db.UnsignedBigInt
+  target_post_id BigInt @db.UnsignedBigInt
+  type           String @db.VarChar(8)
+
+  @@index([post_id, type], map: "link_direction")
+  @@index([target_post_id], map: "target_post_id")
+}
+
+model apr_rank_math_internal_meta {
+  object_id           BigInt @id @db.UnsignedBigInt
+  internal_link_count Int?   @default(0) @db.UnsignedInt
+  external_link_count Int?   @default(0) @db.UnsignedInt
+  incoming_link_count Int?   @default(0) @db.UnsignedInt
+}
+
+model apr_rank_math_redirections {
+  id            BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  sources       String   @db.LongText
+  url_to        String   @db.Text
+  header_code   Int      @db.UnsignedSmallInt
+  hits          BigInt   @default(0) @db.UnsignedBigInt
+  status        String   @default("active") @db.VarChar(25)
+  created       DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  updated       DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  last_accessed DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+
+  @@index([status], map: "status")
+}
+
+model apr_rank_math_redirections_cache {
+  id             BigInt  @id @default(autoincrement()) @db.UnsignedBigInt
+  from_url       String  @db.Text
+  redirection_id BigInt  @db.UnsignedBigInt
+  object_id      BigInt  @default(0) @db.UnsignedBigInt
+  object_type    String  @default("post") @db.VarChar(10)
+  is_redirected  Boolean @default(false)
+
+  @@index([redirection_id], map: "redirection_id")
+}
+
+model apr_sml {
+  id        Int    @unique(map: "id") @default(autoincrement())
+  sml_name  String @db.VarChar(200)
+  sml_email String @db.VarChar(200)
+}
+
+model apr_smush_dir_images {
+  id         Int      @unique(map: "id") @default(autoincrement()) @db.MediumInt
+  path       String   @unique(map: "path", length: 191) @db.Text
+  resize     String?  @db.VarChar(55)
+  lossy      String?  @db.VarChar(55)
+  error      String?  @db.VarChar(55)
+  image_size Int?     @db.UnsignedInt
+  orig_size  Int?     @db.UnsignedInt
+  file_time  Int?     @db.UnsignedInt
+  last_scan  DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @db.Timestamp(0)
+  meta       String?  @db.Text
+
+  @@index([image_size], map: "image_size")
+}
+
+model apr_sponsor_post {
+  sponsor_post_id Int     @id @default(autoincrement())
+  post_ids        String? @db.VarChar(256)
+  random_value    Int?    @db.TinyInt
+  post_type       String? @db.VarChar(32)
+}
+
+model apr_usermeta {
+  umeta_id   BigInt  @id @default(autoincrement()) @db.UnsignedBigInt
+  user_id    BigInt  @default(0) @db.UnsignedBigInt
+  meta_key   String? @db.VarChar(255)
+  meta_value String? @db.LongText
+
+  @@index([meta_key(length: 191)], map: "meta_key")
+  @@index([user_id], map: "user_id")
+}
+
+model apr_users {
+  ID                  BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  user_login          String   @default("") @db.VarChar(60)
+  user_pass           String   @default("") @db.VarChar(255)
+  user_nicename       String   @default("") @db.VarChar(50)
+  user_email          String   @default("") @db.VarChar(100)
+  user_url            String   @default("") @db.VarChar(100)
+  user_registered     DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  user_activation_key String   @default("") @db.VarChar(255)
+  user_status         Int      @default(0)
+  display_name        String   @default("") @db.VarChar(250)
+
+  @@index([user_email], map: "user_email")
+  @@index([user_login], map: "user_login_key")
+  @@index([user_nicename], map: "user_nicename")
+}
+
+model apr_yoast_indexable {
+  id                             Int       @id @default(autoincrement()) @db.UnsignedInt
+  permalink                      String?   @db.LongText
+  permalink_hash                 String?   @db.VarChar(40)
+  object_id                      BigInt?
+  object_type                    String    @db.VarChar(32)
+  object_sub_type                String?   @db.VarChar(32)
+  author_id                      BigInt?
+  post_parent                    BigInt?
+  title                          String?   @db.Text
+  description                    String?   @db.MediumText
+  breadcrumb_title               String?   @db.Text
+  post_status                    String?   @db.VarChar(20)
+  is_public                      Boolean?
+  is_protected                   Boolean?  @default(false)
+  has_public_posts               Boolean?
+  number_of_pages                Int?      @db.UnsignedInt
+  canonical                      String?   @db.LongText
+  primary_focus_keyword          String?
+  primary_focus_keyword_score    Int?
+  readability_score              Int?
+  is_cornerstone                 Boolean?  @default(false)
+  is_robots_noindex              Boolean?  @default(false)
+  is_robots_nofollow             Boolean?  @default(false)
+  is_robots_noarchive            Boolean?  @default(false)
+  is_robots_noimageindex         Boolean?  @default(false)
+  is_robots_nosnippet            Boolean?  @default(false)
+  twitter_title                  String?   @db.Text
+  twitter_image                  String?   @db.LongText
+  twitter_description            String?   @db.LongText
+  twitter_image_id               String?
+  twitter_image_source           String?   @db.Text
+  open_graph_title               String?   @db.Text
+  open_graph_description         String?   @db.LongText
+  open_graph_image               String?   @db.LongText
+  open_graph_image_id            String?
+  open_graph_image_source        String?   @db.Text
+  open_graph_image_meta          String?   @db.MediumText
+  link_count                     Int?
+  incoming_link_count            Int?
+  prominent_words_version        Int?      @db.UnsignedInt
+  created_at                     DateTime? @db.DateTime(0)
+  updated_at                     DateTime  @default(now()) @db.Timestamp(0)
+  blog_id                        BigInt    @default(1)
+  language                       String?   @db.VarChar(32)
+  region                         String?   @db.VarChar(32)
+  schema_page_type               String?   @db.VarChar(64)
+  schema_article_type            String?   @db.VarChar(64)
+  has_ancestors                  Boolean?  @default(false)
+  estimated_reading_time_minutes Int?
+  version                        Int?      @default(1)
+  object_last_modified           DateTime? @db.DateTime(0)
+  object_published_at            DateTime? @db.DateTime(0)
+  inclusive_language_score       Int?
+
+  @@index([object_id, object_type], map: "object_id_and_type")
+  @@index([object_type, object_sub_type], map: "object_type_and_sub_type")
+  @@index([permalink_hash, object_type], map: "permalink_hash_and_object_type")
+  @@index([prominent_words_version, object_type, object_sub_type, post_status], map: "prominent_words")
+  @@index([object_published_at, is_robots_noindex, object_type, object_sub_type], map: "published_sitemap_index")
+  @@index([post_parent, object_type, post_status, object_id], map: "subpages")
+}
+
+model apr_yoast_indexable_hierarchy {
+  indexable_id Int    @db.UnsignedInt
+  ancestor_id  Int    @db.UnsignedInt
+  depth        Int?   @db.UnsignedInt
+  blog_id      BigInt @default(1)
+
+  @@id([indexable_id, ancestor_id])
+  @@index([ancestor_id], map: "ancestor_id")
+  @@index([depth], map: "depth")
+  @@index([indexable_id], map: "indexable_id")
+}
+
+model apr_yoast_migrations {
+  id      Int     @id @default(autoincrement()) @db.UnsignedInt
+  version String? @unique(map: "apr_yoast_migrations_version")
+}
+
+model apr_yoast_primary_term {
+  id         Int       @id @default(autoincrement()) @db.UnsignedInt
+  post_id    BigInt?
+  term_id    BigInt?
+  taxonomy   String    @db.VarChar(32)
+  created_at DateTime? @db.DateTime(0)
+  updated_at DateTime  @default(now()) @db.Timestamp(0)
+  blog_id    BigInt    @default(1)
+
+  @@index([post_id, taxonomy], map: "post_taxonomy")
+  @@index([post_id, term_id], map: "post_term")
+}
+
+model apr_yoast_seo_links {
+  id             BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+  url            String @db.VarChar(255)
+  post_id        BigInt @db.UnsignedBigInt
+  target_post_id BigInt @db.UnsignedBigInt
+  type           String @db.VarChar(8)
+
+  @@index([post_id, type], map: "link_direction")
+}
+
+model apr_yoast_seo_meta {
+  object_id           BigInt @unique(map: "object_id") @db.UnsignedBigInt
+  internal_link_count Int?   @db.UnsignedInt
+  incoming_link_count Int?   @db.UnsignedInt
 }
