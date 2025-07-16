@@ -3,6 +3,35 @@ import { LearnRepository } from '../../domain/repositories/learn.repository.inte
 import { LearnCategory } from '../../domain/entities/category.entity';
 import { LearnPost, LearnPostImage, LearnPostCategory, LearnPostAuthor, LearnPostSponsor, LearnPostSeo } from '../../domain/entities/learn-post.entity';
 import { PrismaService } from '../../../prisma/infrastructure/prisma.service';
+import { Prisma } from '@prisma/client';
+
+// Type definitions for better type safety
+type PostWithMetas = Prisma.AprPostsGetPayload<{
+  include: {
+    metas: true;
+    termRelationships: {
+      include: {
+        termTaxonomy: {
+          include: {
+            term: true;
+          };
+        };
+      };
+    };
+  };
+}>;
+
+type PostMeta = Prisma.AprPostmetaGetPayload<{}>;
+type TermRelationship = Prisma.AprTermRelationshipsGetPayload<{
+  include: {
+    termTaxonomy: {
+      include: {
+        term: true;
+      };
+    };
+  };
+}>;
+type LearnMeta = Prisma.AprLearnMetaGetPayload<{}>;
 
 @Injectable()
 export class LearnRepositoryImpl implements LearnRepository {
@@ -99,11 +128,11 @@ export class LearnRepositoryImpl implements LearnRepository {
 
     // Build the learn post from WordPress data
     const images = await this.buildImages(post.metas);
-    const categories = await this.buildCategories(post.termRelationships);
-    const author = await this.buildAuthor(post.postAuthor);
-    const sponsor = await this.buildSponsor(learnMeta);
-    const locationGeopoint = await this.buildLocationGeopoint(post.metas);
-    const seo = await this.buildSeo(post.metas, post.postTitle, post.postExcerpt);
+    const categories = this.buildCategories(post.termRelationships);
+    const author = this.buildAuthor(post.postAuthor);
+    const sponsor = this.buildSponsor(learnMeta);
+    const locationGeopoint = this.buildLocationGeopoint(post.metas);
+    const seo = this.buildSeo(post.metas, post.postTitle, post.postExcerpt);
 
     return LearnPost.fromDatabase({
       id: Number(post.id),
@@ -127,14 +156,14 @@ export class LearnRepositoryImpl implements LearnRepository {
     return `https://stagingaprende.guatemala.com/${postName}`;
   }
 
-  private async buildImages(metas: any[]): Promise<LearnPostImage[]> {
+  private async buildImages(metas: PostMeta[]): Promise<LearnPostImage[]> {
     const thumbnailMeta = metas.find(meta => meta.metaKey === '_thumbnail_id');
     
-    if (!thumbnailMeta) {
+    if (!thumbnailMeta?.metaValue) {
       return [];
     }
 
-    const attachmentId = thumbnailMeta.metaValue;
+    const attachmentId = parseInt(thumbnailMeta.metaValue, 10);
     const attachment = await this.prisma.aprPosts.findUnique({
       where: { id: BigInt(attachmentId) },
       include: { metas: true },
@@ -167,7 +196,7 @@ export class LearnRepositoryImpl implements LearnRepository {
     ];
   }
 
-  private async buildCategories(termRelationships: any[]): Promise<LearnPostCategory[]> {
+  private buildCategories(termRelationships: TermRelationship[]): LearnPostCategory[] {
     return termRelationships
       .filter(rel => rel.termTaxonomy.taxonomy === 'category')
       .map(rel => ({
@@ -177,7 +206,7 @@ export class LearnRepositoryImpl implements LearnRepository {
       }));
   }
 
-  private async buildAuthor(authorId: bigint): Promise<LearnPostAuthor> {
+  private buildAuthor(authorId: bigint): LearnPostAuthor {
     // For now, return a default author since user table structure is not defined
     return {
       name: 'Ivon Kwei',
@@ -185,7 +214,7 @@ export class LearnRepositoryImpl implements LearnRepository {
     };
   }
 
-  private async buildSponsor(learnMeta: any): Promise<LearnPostSponsor> {
+  private buildSponsor(learnMeta: LearnMeta | null): LearnPostSponsor {
     if (!learnMeta) {
       return {
         name: '',
@@ -211,11 +240,11 @@ export class LearnRepositoryImpl implements LearnRepository {
     };
   }
 
-  private async buildLocationGeopoint(metas: any[]): Promise<{ latitude: string; longitude: string } | null> {
+  private buildLocationGeopoint(metas: PostMeta[]): { latitude: string; longitude: string } | null {
     const latMeta = metas.find(meta => meta.metaKey === 'latitude');
     const longMeta = metas.find(meta => meta.metaKey === 'longitude');
 
-    if (!latMeta || !longMeta) {
+    if (!latMeta?.metaValue || !longMeta?.metaValue) {
       return null;
     }
 
@@ -225,23 +254,42 @@ export class LearnRepositoryImpl implements LearnRepository {
     };
   }
 
-  private async buildSeo(metas: any[], postTitle: string, postExcerpt: string): Promise<LearnPostSeo> {
+  private buildSeo(metas: PostMeta[], postTitle: string, postExcerpt: string): LearnPostSeo {
     // RankMath SEO meta keys
-    const seoTitle = metas.find(meta => meta.metaKey === 'rank_math_title')?.metaValue || postTitle;
-    const seoDescription = metas.find(meta => meta.metaKey === 'rank_math_description')?.metaValue || postExcerpt;
-    const canonical = metas.find(meta => meta.metaKey === 'rank_math_canonical_url')?.metaValue || '';
-    const focusKeyword = metas.find(meta => meta.metaKey === 'rank_math_focus_keyword')?.metaValue || '';
-    const seoScore = parseInt(metas.find(meta => meta.metaKey === 'rank_math_seo_score')?.metaValue || '0');
+    const seoTitleMeta = metas.find(meta => meta.metaKey === 'rank_math_title');
+    const seoTitle = seoTitleMeta?.metaValue || postTitle;
+    
+    const seoDescriptionMeta = metas.find(meta => meta.metaKey === 'rank_math_description');
+    const seoDescription = seoDescriptionMeta?.metaValue || postExcerpt;
+    
+    const canonicalMeta = metas.find(meta => meta.metaKey === 'rank_math_canonical_url');
+    const canonical = canonicalMeta?.metaValue || '';
+    
+    const focusKeywordMeta = metas.find(meta => meta.metaKey === 'rank_math_focus_keyword');
+    const focusKeyword = focusKeywordMeta?.metaValue || '';
+    
+    const seoScoreMeta = metas.find(meta => meta.metaKey === 'rank_math_seo_score');
+    const seoScore = parseInt(seoScoreMeta?.metaValue || '0', 10);
     
     // Open Graph fields
-    const ogTitle = metas.find(meta => meta.metaKey === 'rank_math_facebook_title')?.metaValue || seoTitle;
-    const ogDescription = metas.find(meta => meta.metaKey === 'rank_math_facebook_description')?.metaValue || seoDescription;
-    const ogImage = metas.find(meta => meta.metaKey === 'rank_math_facebook_image')?.metaValue || '';
+    const ogTitleMeta = metas.find(meta => meta.metaKey === 'rank_math_facebook_title');
+    const ogTitle = ogTitleMeta?.metaValue || seoTitle;
+    
+    const ogDescriptionMeta = metas.find(meta => meta.metaKey === 'rank_math_facebook_description');
+    const ogDescription = ogDescriptionMeta?.metaValue || seoDescription;
+    
+    const ogImageMeta = metas.find(meta => meta.metaKey === 'rank_math_facebook_image');
+    const ogImage = ogImageMeta?.metaValue || '';
     
     // Twitter fields
-    const twitterTitle = metas.find(meta => meta.metaKey === 'rank_math_twitter_title')?.metaValue || ogTitle;
-    const twitterDescription = metas.find(meta => meta.metaKey === 'rank_math_twitter_description')?.metaValue || ogDescription;
-    const twitterImage = metas.find(meta => meta.metaKey === 'rank_math_twitter_image')?.metaValue || ogImage;
+    const twitterTitleMeta = metas.find(meta => meta.metaKey === 'rank_math_twitter_title');
+    const twitterTitle = twitterTitleMeta?.metaValue || ogTitle;
+    
+    const twitterDescriptionMeta = metas.find(meta => meta.metaKey === 'rank_math_twitter_description');
+    const twitterDescription = twitterDescriptionMeta?.metaValue || ogDescription;
+    
+    const twitterImageMeta = metas.find(meta => meta.metaKey === 'rank_math_twitter_image');
+    const twitterImage = twitterImageMeta?.metaValue || ogImage;
 
     return {
       title: seoTitle,
