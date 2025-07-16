@@ -5,7 +5,6 @@ import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from './modules/prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { LearnModule } from './modules/learn/learn.module';
-import { ArticlesModule } from './modules/articles/articles.module';
 import { OAuthAuthGuard } from './modules/auth/infrastructure/guards/oauth-auth.guard';
 
 @Module({
@@ -17,7 +16,6 @@ import { OAuthAuthGuard } from './modules/auth/infrastructure/guards/oauth-auth.
     AuthModule,
     HealthCheckModule,
     LearnModule,
-    ArticlesModule,
   ],
   controllers: [],
   providers: [

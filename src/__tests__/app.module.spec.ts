@@ -4,14 +4,12 @@ import { HealthCheckModule } from '../modules/healthcheck/healthcheck.module';
 import { AuthModule } from '../modules/auth/auth.module';
 import { LearnModule } from '../modules/learn/learn.module';
 import { PrismaModule } from '../modules/prisma/prisma.module';
-import { ArticlesModule } from '../modules/articles/articles.module';
 
 // Mock modules
 jest.mock('../modules/healthcheck/healthcheck.module');
 jest.mock('../modules/auth/auth.module');
 jest.mock('../modules/learn/learn.module');
 jest.mock('../modules/prisma/prisma.module');
-jest.mock('../modules/articles/articles.module');
 
 describe('AppModule', () => {
   let module: TestingModule;
@@ -53,10 +51,6 @@ describe('AppModule', () => {
 
     it('should import LearnModule', () => {
       expect(LearnModule).toBeDefined();
-    });
-
-    it('should import ArticlesModule', () => {
-      expect(ArticlesModule).toBeDefined();
     });
   });
 
