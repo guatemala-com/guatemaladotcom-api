@@ -1,3 +1,9 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,129 +13,139 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// WordPress Posts - Main site content
 model AprPosts {
-  id                  BigInt   @id @default(autoincrement()) @map("ID") @db.UnsignedBigInt
-  postAuthor          BigInt   @default(0) @map("post_author") @db.UnsignedBigInt
-  postDate            DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @map("post_date") @db.DateTime(0)
-  postDateGmt         DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @map("post_date_gmt") @db.DateTime(0)
-  postContent         String   @map("post_content") @db.LongText
-  postTitle           String   @map("post_title") @db.Text
-  postExcerpt         String   @map("post_excerpt") @db.Text
-  postStatus          String   @default("publish") @map("post_status") @db.VarChar(20)
-  commentStatus       String   @default("open") @map("comment_status") @db.VarChar(20)
-  pingStatus          String   @default("open") @map("ping_status") @db.VarChar(20)
-  postPassword        String   @default("") @map("post_password") @db.VarChar(255)
-  postName            String   @default("") @map("post_name") @db.VarChar(200)
-  toPing              String   @map("to_ping") @db.Text
-  pinged              String   @map("pinged") @db.Text
-  postModified        DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @map("post_modified") @db.DateTime(0)
-  postModifiedGmt     DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @map("post_modified_gmt") @db.DateTime(0)
-  postContentFiltered String   @map("post_content_filtered") @db.LongText
-  postParent          BigInt   @default(0) @map("post_parent") @db.UnsignedBigInt
-  guid                String   @default("") @db.VarChar(255)
-  menuOrder           Int      @default(0) @map("menu_order")
-  postType            String   @default("post") @map("post_type") @db.VarChar(20)
-  postMimeType        String   @default("") @map("post_mime_type") @db.VarChar(100)
-  commentCount        BigInt   @default(0) @map("comment_count")
-
+  id                  BigInt        @id @default(autoincrement()) @map("ID")
+  postAuthor          BigInt        @default(0) @map("post_author")
+  postDate            DateTime      @default(dbgenerated("'0000-00-00 00:00:00'")) @map("post_date")
+  postDateGmt         DateTime      @default(dbgenerated("'0000-00-00 00:00:00'")) @map("post_date_gmt")
+  postContent         String        @db.LongText @map("post_content")
+  postTitle           String        @db.Text @map("post_title")
+  postExcerpt         String        @db.Text @map("post_excerpt")
+  postStatus          String        @default("publish") @db.VarChar(20) @map("post_status")
+  commentStatus       String        @default("open") @db.VarChar(20) @map("comment_status")
+  pingStatus          String        @default("open") @db.VarChar(20) @map("ping_status")
+  postPassword        String        @default("") @db.VarChar(255) @map("post_password")
+  postName            String        @default("") @db.VarChar(200) @map("post_name")
+  toPing              String        @db.Text @map("to_ping")
+  pinged              String        @db.Text @map("pinged")
+  postModified        DateTime      @default(dbgenerated("'0000-00-00 00:00:00'")) @map("post_modified")
+  postModifiedGmt     DateTime      @default(dbgenerated("'0000-00-00 00:00:00'")) @map("post_modified_gmt")
+  postContentFiltered String        @db.LongText @map("post_content_filtered")
+  postParent          BigInt        @default(0) @map("post_parent")
+  guid                String        @default("") @db.VarChar(255)
+  menuOrder           Int           @default(0) @map("menu_order")
+  postType            String        @default("post") @db.VarChar(20) @map("post_type")
+  postMimeType        String        @default("") @db.VarChar(100) @map("post_mime_type")
+  commentCount        BigInt        @default(0) @map("comment_count")
+  
   // Relations
-  metas               AprPostmeta[]          @relation("PostMetas")
-  termRelationships   AprTermRelationships[] @relation("PostTerms")
-
-  @@index([postName(length: 191)], map: "post_name")
+  metas               AprPostmeta[]
+  termRelationships   AprTermRelationships[]
+  
+  @@index([postName], map: "post_name")
   @@index([postType, postStatus, postDate, id], map: "type_status_date")
   @@index([postParent], map: "post_parent")
   @@index([postAuthor], map: "post_author")
   @@map("apr_posts")
 }
 
+// WordPress Post Meta - Metadata, custom fields, SEO
 model AprPostmeta {
-  metaId    BigInt  @id @default(autoincrement()) @map("meta_id") @db.UnsignedBigInt
-  postId    BigInt  @default(0) @map("post_id") @db.UnsignedBigInt
-  metaKey   String? @map("meta_key") @db.VarChar(255)
-  metaValue String? @map("meta_value") @db.LongText
-
+  metaId    BigInt    @id @default(autoincrement()) @map("meta_id")
+  postId    BigInt    @default(0) @map("post_id")
+  metaKey   String?   @db.VarChar(255) @map("meta_key")
+  metaValue String?   @db.LongText @map("meta_value")
+  
   // Relations
-  post      AprPosts @relation("PostMetas", fields: [postId], references: [id])
-
+  post      AprPosts? @relation(fields: [postId], references: [id])
+  
   @@index([postId], map: "post_id")
-  @@index([metaKey(length: 191)], map: "meta_key")
+  @@index([metaKey], map: "meta_key")
   @@map("apr_postmeta")
 }
 
+// Learn Meta - Educational content with sponsor information
 model AprLearnMeta {
-  id                     Int      @id @map("ID") @db.UnsignedInt
-  url                    String?  @db.Text
-  thumbnailId            Int?     @map("thumbnail_id")
-  authorId               Int?     @map("author_id")
-  authorName             String?  @map("author_name") @db.VarChar(255)
-  images                 String?  @db.Text
-  isSponsored            Boolean? @default(false) @map("is_sponsored")
-  sponsorName            String?  @map("sponsor_name") @db.VarChar(255)
-  sponsorUrl             String?  @map("sponsor_url") @db.Text
-  sponsorImage           Int?     @default(0) @map("sponsor_image")
-  sponsorImageSidebarUrl String?  @map("sponsor_image_sidebar_url") @db.Text
-  sponsorImageSidebar    Int?     @default(0) @map("sponsor_image_sidebar")
-  sponsorImageContentUrl String?  @map("sponsor_image_content_url") @db.Text
-  sponsorImageContent    Int?     @default(0) @map("sponsor_image_content")
-  sponsorExtraData       String?  @map("sponsor_extra_data") @db.Text
-
+  id                        Int     @id @map("ID")
+  url                       String? @db.Text
+  thumbnailId               Int?    @map("thumbnail_id")
+  authorId                  Int?    @map("author_id")
+  authorName                String? @db.VarChar(255) @map("author_name")
+  images                    String? @db.Text
+  isSponsored               Boolean @default(false) @map("is_sponsored")
+  sponsorName               String? @db.VarChar(255) @map("sponsor_name")
+  sponsorUrl                String? @db.Text @map("sponsor_url")
+  sponsorImage              Int?    @default(0) @map("sponsor_image")
+  sponsorImageSidebarUrl    String? @db.Text @map("sponsor_image_sidebar_url")
+  sponsorImageSidebar       Int?    @default(0) @map("sponsor_image_sidebar")
+  sponsorImageContentUrl    String? @db.Text @map("sponsor_image_content_url")
+  sponsorImageContent       Int?    @default(0) @map("sponsor_image_content")
+  sponsorExtraData          String? @db.Text @map("sponsor_extra_data")
+  
   @@map("apr_learn_meta")
 }
 
+// WordPress Terms - Terms (categories, tags, etc.)
 model AprTerms {
-  termId    BigInt @id @default(autoincrement()) @map("term_id") @db.UnsignedBigInt
-  name      String @default("") @db.VarChar(200)
-  slug      String @default("") @db.VarChar(200)
+  termId    BigInt @id @default(autoincrement()) @map("term_id")
+  name      String @db.VarChar(200)
+  slug      String @db.VarChar(200)
   termGroup BigInt @default(0) @map("term_group")
-
+  
   // Relations
-  taxonomies AprTermTaxonomy[] @relation("TermTaxonomyTerm")
-
-  @@index([name(length: 191)], map: "name")
-  @@index([slug(length: 191)], map: "slug")
+  taxonomies AprTermTaxonomy[]
+  metas      AprTermmeta[]
+  
+  @@index([name], map: "name")
+  @@index([slug], map: "slug")
   @@map("apr_terms")
 }
 
+// WordPress Term Taxonomy - Term type (category, post_tag, etc.)
 model AprTermTaxonomy {
-  termTaxonomyId BigInt @id @default(autoincrement()) @map("term_taxonomy_id") @db.UnsignedBigInt
-  termId         BigInt @default(0) @map("term_id") @db.UnsignedBigInt
-  taxonomy       String @default("") @db.VarChar(32)
+  termTaxonomyId BigInt @id @default(autoincrement()) @map("term_taxonomy_id")
+  termId         BigInt @default(0) @map("term_id")
+  taxonomy       String @db.VarChar(32)
   description    String @db.LongText
-  parent         BigInt @default(0) @db.UnsignedBigInt
+  parent         BigInt @default(0)
   count          BigInt @default(0)
-
+  
   // Relations
-  term           AprTerms               @relation("TermTaxonomyTerm", fields: [termId], references: [termId])
-  relationships  AprTermRelationships[] @relation("TermRelations")
-
-  @@unique([termId, taxonomy], map: "term_id_taxonomy")
+  term          AprTerms               @relation(fields: [termId], references: [termId])
+  relationships AprTermRelationships[]
+  
+  @@index([termId, taxonomy], map: "term_id_taxonomy")
   @@index([taxonomy], map: "taxonomy")
   @@map("apr_term_taxonomy")
 }
 
+// WordPress Term Relationships - Relates posts with terms
 model AprTermRelationships {
-  objectId       BigInt @default(0) @map("object_id") @db.UnsignedBigInt
-  termTaxonomyId BigInt @default(0) @map("term_taxonomy_id") @db.UnsignedBigInt
+  objectId       BigInt @map("object_id")
+  termTaxonomyId BigInt @map("term_taxonomy_id")
   termOrder      Int    @default(0) @map("term_order")
-
+  
   // Relations
-  post           AprPosts        @relation("PostTerms", fields: [objectId], references: [id])
-  termTaxonomy   AprTermTaxonomy @relation("TermRelations", fields: [termTaxonomyId], references: [termTaxonomyId])
-
+  post         AprPosts        @relation(fields: [objectId], references: [id])
+  termTaxonomy AprTermTaxonomy @relation(fields: [termTaxonomyId], references: [termTaxonomyId])
+  
   @@id([objectId, termTaxonomyId])
   @@index([termTaxonomyId], map: "term_taxonomy_id")
   @@map("apr_term_relationships")
 }
 
-
-
-
-
-
-
-
-
-
-
-
+// WordPress Term Meta - Terms metadata
+model AprTermmeta {
+  metaId    BigInt  @id @default(autoincrement()) @map("meta_id")
+  termId    BigInt  @map("term_id")
+  metaKey   String? @db.VarChar(255) @map("meta_key")
+  metaValue String? @db.LongText @map("meta_value")
+  
+  // Relations
+  term AprTerms @relation(fields: [termId], references: [termId])
+  
+  @@index([termId], map: "term_id")
+  @@index([metaKey], map: "meta_key")
+  @@map("apr_termmeta")
+}

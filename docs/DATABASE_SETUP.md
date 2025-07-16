@@ -53,7 +53,20 @@ docker-compose logs mysql
 
 ### 3. Access the Database
 
-#### Option 1: MySQL Client
+#### Option 1: Adminer (Web Interface)
+```bash
+# Start Adminer
+docker-compose up -d adminer
+
+# Access http://localhost:8080
+# System: MySQL
+# Server: mysql
+# User: guatemala_user (or root for full access)
+# Password: the one you configured in .env
+# Database: aprende_db
+```
+
+#### Option 2: MySQL Client
 ```bash
 # Connect with MySQL client
 mysql -h localhost -P 3306 -u guatemala_user -p aprende_db
@@ -61,20 +74,6 @@ mysql -h localhost -P 3306 -u guatemala_user -p aprende_db
 # Or as root
 mysql -h localhost -P 3306 -u root -p aprende_db
 ```
-
-#### Option 2: GUI Tools (Recommended)
-For a better visual experience, you can use:
-- **MySQL Workbench**: Official MySQL GUI tool
-- **DBeaver**: Universal database tool
-- **phpMyAdmin**: Web-based MySQL administration tool
-- **TablePlus**: Modern database GUI tool
-
-**Connection settings for any GUI tool**:
-- Host: `localhost`
-- Port: `3306`
-- User: `guatemala_user` (or `root` for full access)
-- Password: the one configured in .env
-- Database: `aprende_db`
 
 ### 4. Generate Prisma Client
 

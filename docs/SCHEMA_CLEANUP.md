@@ -83,21 +83,23 @@
 - **Volume**: Data persistence
 - **Port**: 3306
 
-### Database Access
-For database administration, use external tools like:
-- **MySQL Workbench**: Official MySQL GUI tool
-- **DBeaver**: Universal database tool
-- **TablePlus**: Modern database GUI tool
+### Adminer
+- **Image**: Adminer 4.8.1
+- **Port**: 8080
+- **Access**: http://localhost:8080
 
 ### Docker Commands
 ```bash
 # Start database
 docker compose up -d mysql
 
+# Start Adminer
+docker compose up -d adminer
+
 # View logs
 docker compose logs mysql
 
-# Access MySQL via command line
+# Access MySQL
 docker compose exec mysql mysql -u root -p aprende_db
 ```
 
