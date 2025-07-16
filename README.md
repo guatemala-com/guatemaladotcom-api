@@ -138,6 +138,27 @@ Before getting started, ensure you have the following installed:
 - **pnpm**: Package manager (will be installed if not present)
 - **Docker**: For running the MySQL database
 
+### Recommended: Using NVM (Node Version Manager)
+
+We recommend using **nvm** to manage Node.js versions. This ensures you're using the correct Node.js version for this project:
+
+```bash
+# Install nvm (if not already installed)
+# Visit: https://github.com/nvm-sh/nvm#installation-and-update
+
+# Install and use Node.js 20
+$ nvm install 20
+$ nvm use 20
+
+# Set Node.js 20 as default (optional)
+$ nvm alias default 20
+```
+
+The project includes a `.nvmrc` file, so you can also use:
+```bash
+$ nvm use  # Automatically uses the version specified in .nvmrc
+```
+
 You can verify your Node.js version with:
 ```bash
 $ node --version  # Should show v20.x.x or higher
