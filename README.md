@@ -129,6 +129,20 @@ OAUTH_CLIENTS='[
 2. **Server-to-Server (Optional Certificate)**: Certificate adds extra security layer
 3. **High-Security Client (Required Certificate)**: Certificate is mandatory
 
+## Prerequisites
+
+Before getting started, ensure you have the following installed:
+
+- **Node.js**: Version 20 or higher
+- **npm**: Version 10 or higher (comes with Node.js 20)
+- **pnpm**: Package manager (will be installed if not present)
+- **Docker**: For running the MySQL database
+
+You can verify your Node.js version with:
+```bash
+$ node --version  # Should show v20.x.x or higher
+```
+
 ## Project Setup
 
 ```bash
