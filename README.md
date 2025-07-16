@@ -225,14 +225,11 @@ $ pnpm prisma migrate deploy
 ```
 src/
 ├── modules/           # Feature modules
-│   ├── posts/        # WordPress posts integration
-│   ├── pages/        # WordPress pages integration
-│   └── media/        # WordPress media integration
-├── shared/           # Shared utilities and interfaces
-│   ├── domain/       # Domain entities and interfaces
-│   ├── infrastructure/ # External services and repositories
-│   └── application/  # Use cases and application services
-├── config/           # Configuration files
+│   ├── auth/         # OAuth authentication
+│   ├── healthcheck/  # Health check endpoints
+│   ├── learn/        # Learn articles and categories
+│   └── prisma/       # Database service
+├── __tests__/        # Application tests
 └── main.ts          # Application entry point
 ```
 

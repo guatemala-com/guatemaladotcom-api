@@ -37,6 +37,20 @@ export class LearnPostAuthorDto {
   id: number;
 }
 
+export class LearnPostSeoDto {
+  title: string;
+  description: string;
+  canonical: string;
+  focus_keyword: string;
+  seo_score: number;
+  og_title: string;
+  og_description: string;
+  og_image: string;
+  twitter_title: string;
+  twitter_description: string;
+  twitter_image: string;
+}
+
 export class LearnPostResponseDto {
   id: number;
   url: string;
@@ -58,6 +72,7 @@ export class LearnPostResponseDto {
   sponsor_image_content_url: string;
   sponsor_image_content: any[];
   sponsor_extra_data: string;
+  seo: LearnPostSeoDto;
 }
 
  

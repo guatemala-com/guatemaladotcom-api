@@ -45,4 +45,17 @@ export const mockLearnPost: LearnPostResponseDto = {
   sponsor_image_content_url: '',
   sponsor_image_content: [],
   sponsor_extra_data: '',
+  seo: {
+    title: 'Test Post - SEO Title',
+    description: 'This is a test SEO description',
+    canonical: 'https://stagingaprende.guatemala.com/test-post',
+    focus_keyword: 'test',
+    seo_score: 85,
+    og_title: 'Test Post - Open Graph Title',
+    og_description: 'This is a test Open Graph description',
+    og_image: 'https://stagingaprende.guatemala.com/og-image.jpg',
+    twitter_title: 'Test Post - Twitter Title',
+    twitter_description: 'This is a test Twitter description',
+    twitter_image: 'https://stagingaprende.guatemala.com/twitter-image.jpg',
+  },
 };

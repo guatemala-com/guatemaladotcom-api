@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { LearnRepository } from '../../domain/repositories/learn.repository.interface';
 import { LearnCategory } from '../../domain/entities/category.entity';
-import { LearnPost, LearnPostImage, LearnPostCategory, LearnPostAuthor, LearnPostSponsor } from '../../domain/entities/learn-post.entity';
+import { LearnPost, LearnPostImage, LearnPostCategory, LearnPostAuthor, LearnPostSponsor, LearnPostSeo } from '../../domain/entities/learn-post.entity';
 import { PrismaService } from '../../../prisma/infrastructure/prisma.service';
 
 @Injectable()
@@ -103,6 +103,7 @@ export class LearnRepositoryImpl implements LearnRepository {
     const author = await this.buildAuthor(post.postAuthor);
     const sponsor = await this.buildSponsor(learnMeta);
     const locationGeopoint = await this.buildLocationGeopoint(post.metas);
+    const seo = await this.buildSeo(post.metas, post.postTitle, post.postExcerpt);
 
     return LearnPost.fromDatabase({
       id: Number(post.id),
@@ -118,6 +119,7 @@ export class LearnRepositoryImpl implements LearnRepository {
       keywords: [],
       isSponsored: learnMeta?.isSponsored ? 1 : 0,
       sponsor,
+      seo,
     });
   }
 
@@ -220,6 +222,39 @@ export class LearnRepositoryImpl implements LearnRepository {
     return {
       latitude: latMeta.metaValue,
       longitude: longMeta.metaValue,
+    };
+  }
+
+  private async buildSeo(metas: any[], postTitle: string, postExcerpt: string): Promise<LearnPostSeo> {
+    // RankMath SEO meta keys
+    const seoTitle = metas.find(meta => meta.metaKey === 'rank_math_title')?.metaValue || postTitle;
+    const seoDescription = metas.find(meta => meta.metaKey === 'rank_math_description')?.metaValue || postExcerpt;
+    const canonical = metas.find(meta => meta.metaKey === 'rank_math_canonical_url')?.metaValue || '';
+    const focusKeyword = metas.find(meta => meta.metaKey === 'rank_math_focus_keyword')?.metaValue || '';
+    const seoScore = parseInt(metas.find(meta => meta.metaKey === 'rank_math_seo_score')?.metaValue || '0');
+    
+    // Open Graph fields
+    const ogTitle = metas.find(meta => meta.metaKey === 'rank_math_facebook_title')?.metaValue || seoTitle;
+    const ogDescription = metas.find(meta => meta.metaKey === 'rank_math_facebook_description')?.metaValue || seoDescription;
+    const ogImage = metas.find(meta => meta.metaKey === 'rank_math_facebook_image')?.metaValue || '';
+    
+    // Twitter fields
+    const twitterTitle = metas.find(meta => meta.metaKey === 'rank_math_twitter_title')?.metaValue || ogTitle;
+    const twitterDescription = metas.find(meta => meta.metaKey === 'rank_math_twitter_description')?.metaValue || ogDescription;
+    const twitterImage = metas.find(meta => meta.metaKey === 'rank_math_twitter_image')?.metaValue || ogImage;
+
+    return {
+      title: seoTitle,
+      description: seoDescription,
+      canonical,
+      focus_keyword: focusKeyword,
+      seo_score: seoScore,
+      og_title: ogTitle,
+      og_description: ogDescription,
+      og_image: ogImage,
+      twitter_title: twitterTitle,
+      twitter_description: twitterDescription,
+      twitter_image: twitterImage,
     };
   }
 }

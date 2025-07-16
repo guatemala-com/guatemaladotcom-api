@@ -48,6 +48,20 @@ export interface LearnPostSponsor {
   extra_data: string;
 }
 
+export interface LearnPostSeo {
+  title: string;
+  description: string;
+  canonical: string;
+  focus_keyword: string;
+  seo_score: number;
+  og_title: string;
+  og_description: string;
+  og_image: string;
+  twitter_title: string;
+  twitter_description: string;
+  twitter_image: string;
+}
+
 export class LearnPost {
   constructor(
     public readonly id: number,
@@ -63,6 +77,7 @@ export class LearnPost {
     public readonly keywords: string[],
     public readonly isSponsored: number,
     public readonly sponsor: LearnPostSponsor,
+    public readonly seo: LearnPostSeo,
   ) {}
 
   /**
@@ -90,6 +105,7 @@ export class LearnPost {
       sponsor_image_content_url: this.sponsor.image_content_url,
       sponsor_image_content: this.sponsor.image_content,
       sponsor_extra_data: this.sponsor.extra_data,
+      seo: this.seo,
     };
   }
 
@@ -110,6 +126,7 @@ export class LearnPost {
     keywords: string[];
     isSponsored: number;
     sponsor: LearnPostSponsor;
+    seo: LearnPostSeo;
   }): LearnPost {
     return new LearnPost(
       data.id,
@@ -125,6 +142,7 @@ export class LearnPost {
       data.keywords,
       data.isSponsored,
       data.sponsor,
+      data.seo,
     );
   }
 } 
