@@ -3,7 +3,10 @@ import { LearnController } from '../learn.controller';
 import { GetCategoriesUseCase } from '../../../application/use-cases/get-categories.use-case';
 import { GetCategoryByIdUseCase } from '../../../application/use-cases/get-category-by-id.use-case';
 import { GetLearnPostByIdUseCase } from '../../../application/use-cases/get-learn-post-by-id.use-case';
-import { mockCategories, mockLearnPost } from '../../../__mocks__/use-cases.mocks';
+import {
+  mockCategories,
+  mockLearnPost,
+} from '../../../__mocks__/use-cases.mocks';
 
 describe('LearnController', () => {
   let controller: LearnController;

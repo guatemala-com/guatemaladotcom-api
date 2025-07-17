@@ -74,5 +74,3 @@ export class LearnPostResponseDto {
   sponsor_extra_data: string;
   seo: LearnPostSeoDto;
 }
-
- 

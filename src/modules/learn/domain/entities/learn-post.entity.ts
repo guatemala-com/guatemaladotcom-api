@@ -145,4 +145,4 @@ export class LearnPost {
       data.seo,
     );
   }
-} 
+}

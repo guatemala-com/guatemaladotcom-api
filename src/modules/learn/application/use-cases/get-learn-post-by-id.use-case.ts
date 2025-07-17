@@ -6,7 +6,7 @@ import { LearnPostResponseDto } from '../dtos/learn-post.dto';
 export class GetLearnPostByIdUseCase {
   constructor(
     @Inject('LearnRepository')
-    private readonly learnRepository: LearnRepository
+    private readonly learnRepository: LearnRepository,
   ) {}
 
   async execute(id: number): Promise<LearnPostResponseDto> {
@@ -18,4 +18,4 @@ export class GetLearnPostByIdUseCase {
 
     return learnPost.toResponse();
   }
-} 
+}

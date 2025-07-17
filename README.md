@@ -18,10 +18,12 @@ This project is part of a comprehensive migration from a traditional WordPress w
 Complete documentation is available in the [`docs/`](./docs/) folder:
 
 ### Setup & Configuration
+
 - [Database Setup](./docs/DATABASE_SETUP.md) - Complete guide for setting up the MySQL database with Docker
 - [Schema Cleanup](./docs/SCHEMA_CLEANUP.md) - Documentation of Prisma schema cleanup and database structure
 
 ### Additional Resources
+
 - [Test Documentation](./test/README.md) - Testing setup and utilities
 
 ## Architecture
@@ -134,9 +136,24 @@ OAUTH_CLIENTS='[
 Before getting started, ensure you have the following installed:
 
 - **Node.js**: Version 20 or higher
-- **npm**: Version 10 or higher (comes with Node.js 20)
-- **pnpm**: Package manager (will be installed if not present)
+- **pnpm**: Version 9 or higher (package manager)
 - **Docker**: For running the MySQL database
+
+### Installing pnpm
+
+If you don't have pnpm installed, you can install it using:
+
+```bash
+# Using npm (if available)
+npm install -g pnpm
+
+# Using Node.js corepack (recommended for Node.js 16+)
+corepack enable
+corepack prepare pnpm@latest --activate
+
+# Or using curl (macOS/Linux)
+curl -fsSL https://get.pnpm.io/install.sh | sh -
+```
 
 ### Recommended: Using NVM (Node Version Manager)
 
@@ -147,27 +164,29 @@ We recommend using **nvm** to manage Node.js versions. This ensures you're using
 # Visit: https://github.com/nvm-sh/nvm#installation-and-update
 
 # Install and use Node.js 20
-$ nvm install 20
-$ nvm use 20
+nvm install 20
+nvm use 20
 
 # Set Node.js 20 as default (optional)
-$ nvm alias default 20
+nvm alias default 20
 ```
 
 The project includes a `.nvmrc` file, so you can also use:
+
 ```bash
-$ nvm use  # Automatically uses the version specified in .nvmrc
+nvm use  # Automatically uses the version specified in .nvmrc
 ```
 
 You can verify your Node.js version with:
+
 ```bash
-$ node --version  # Should show v20.x.x or higher
+node --version  # Should show v20.x.x or higher
 ```
 
 ## Project Setup
 
 ```bash
-$ pnpm install
+pnpm install
 ```
 
 ## Environment Configuration
@@ -175,31 +194,24 @@ $ pnpm install
 Create a `.env` file in the project root to set environment variables. Copy the example file:
 
 ```bash
-$ cp env.example .env
+cp env.example .env
 ```
 
 ### Security Configuration
 
 The API includes multiple security layers for content protection:
 
-## Documentation
-
-Complete documentation is available in the [`docs/`](./docs/) folder:
-
-- [Database Setup](./docs/DATABASE_SETUP.md) - Complete guide for setting up the MySQL database with Docker
-- [Schema Cleanup](./docs/SCHEMA_CLEANUP.md) - Documentation of Prisma schema cleanup and database structure
-
 ## Database Setup
 
 ```bash
 # Generate Prisma client
-$ pnpm prisma generate
+pnpm prisma generate
 
 # Run database migrations
-$ pnpm prisma migrate dev
+pnpm prisma migrate dev
 
 # Seed database (if applicable)
-$ pnpm prisma db seed
+pnpm prisma db seed
 ```
 
 ## Docker
@@ -210,54 +222,54 @@ Make sure you have a `.env` file in the project root with the required variables
 
 ```bash
 # Start MySQL:
-$ docker-compose --env-file env_file_path up -d
+docker-compose --env-file env_file_path up -d
 
-# top MySQL:
-$ docker-compose down
+# Stop MySQL:
+docker-compose down
 ```
 
 ## Compile and Run the Project
 
 ```bash
 # development
-$ pnpm run start
+pnpm run start
 
 # watch mode
-$ pnpm run start:dev
+pnpm run start:dev
 
 # production mode
-$ pnpm run start:prod
+pnpm run start:prod
 ```
 
 ## Run Tests
 
 ```bash
 # unit tests
-$ pnpm run test
+pnpm run test
 
 # e2e tests
-$ pnpm run test:e2e
+pnpm run test:e2e
 
 # test coverage
-$ pnpm run test:cov
+pnpm run test:cov
 ```
 
 ## Database Management
 
 ```bash
 # Open Prisma Studio
-$ pnpm prisma studio
+pnpm prisma studio
 
 # Reset database
-$ pnpm prisma migrate reset
+pnpm prisma migrate reset
 
 # Deploy migrations to production
-$ pnpm prisma migrate deploy
+pnpm prisma migrate deploy
 ```
 
 ## Project Structure
 
-```
+```plaintext
 src/
 ├── modules/           # Feature modules
 │   ├── auth/         # OAuth authentication
@@ -283,8 +295,8 @@ When you're ready to deploy your NestJS application to production, there are som
 If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
 
 ```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
+pnpm install -g @nestjs/mau
+mau deploy
 ```
 
 ## Resources
