@@ -15,8 +15,6 @@ export class LearnCategory {
     public readonly parent: number,
     public readonly count: number,
     public readonly children: LearnCategory[],
-    public readonly createdAt: Date,
-    public readonly updatedAt: Date,
   ) {}
 
   /**
@@ -45,8 +43,6 @@ export class LearnCategory {
       parent: this.parent,
       count: this.count,
       children: this.children.map((child) => child.toResponse()),
-      createdAt: this.createdAt.toISOString(),
-      updatedAt: this.updatedAt.toISOString(),
     };
   }
 
@@ -61,8 +57,6 @@ export class LearnCategory {
     parent: number;
     count: number;
     children?: LearnCategory[];
-    createdAt: Date;
-    updatedAt: Date;
   }): LearnCategory {
     return new LearnCategory(
       data.id,
@@ -72,8 +66,6 @@ export class LearnCategory {
       data.parent,
       data.count,
       data.children || [],
-      data.createdAt,
-      data.updatedAt,
     );
   }
 }

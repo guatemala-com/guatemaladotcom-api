@@ -13,6 +13,4 @@ export class CategoryResponseDto {
   parent: number;
   count: number;
   children: CategoryResponseDto[];
-  createdAt: string;
-  updatedAt: string;
 }
