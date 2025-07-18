@@ -5,6 +5,7 @@ import { LearnPost } from '../../domain/entities/learn-post.entity';
 import { PrismaService } from '../../../prisma/infrastructure/prisma.service';
 import { META_KEYS } from '../consts/meta-keys.const';
 import { TAXONOMIES } from '../consts/taxonomies';
+import { POST_STATUS } from '../consts/post-status';
 import {
   CategoryWithTerm,
   AttachmentPost,
@@ -101,7 +102,7 @@ export class LearnRepositoryImpl implements LearnRepository {
       },
     });
 
-    if (!post || post.postStatus !== 'publish') {
+    if (!post || post.postStatus !== POST_STATUS.PUBLISH) {
       return null;
     }
 

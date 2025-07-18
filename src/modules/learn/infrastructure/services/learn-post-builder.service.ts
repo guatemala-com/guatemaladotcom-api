@@ -162,60 +162,53 @@ export class LearnPostBuilderService {
     const seoTitleMeta = metas.find(
       (meta) => meta.metaKey === META_KEYS.RANKMATH_TITLE,
     );
-    const seoTitle = seoTitleMeta?.metaValue || postTitle;
-
+    const seoTitle = seoTitleMeta?.metaValue ?? postTitle;
     const seoDescriptionMeta = metas.find(
       (meta) => meta.metaKey === META_KEYS.RANKMATH_DESCRIPTION,
     );
-    const seoDescription = seoDescriptionMeta?.metaValue || postExcerpt;
-
+    const seoDescription = seoDescriptionMeta?.metaValue ?? postExcerpt;
     const canonicalMeta = metas.find(
       (meta) => meta.metaKey === META_KEYS.RANKMATH_CANONICAL_URL,
     );
-    const canonical = canonicalMeta?.metaValue || '';
-
+    const canonical = canonicalMeta?.metaValue ?? '';
     const focusKeywordMeta = metas.find(
       (meta) => meta.metaKey === META_KEYS.RANKMATH_FOCUS_KEYWORD,
     );
-    const focusKeyword = focusKeywordMeta?.metaValue || '';
-
+    const focusKeyword = focusKeywordMeta?.metaValue ?? '';
     const seoScoreMeta = metas.find(
       (meta) => meta.metaKey === META_KEYS.RANKMATH_SEO_SCORE,
     );
-    const seoScore = parseInt(seoScoreMeta?.metaValue || '0', 10);
+    const seoScore = parseInt(seoScoreMeta?.metaValue ?? '0', 10);
 
     // Open Graph fields
     const ogTitleMeta = metas.find(
       (meta) => meta.metaKey === META_KEYS.RANKMATH_FB_TITLE,
     );
-    const ogTitle = ogTitleMeta?.metaValue || seoTitle;
-
+    const ogTitle = ogTitleMeta?.metaValue ?? seoTitle;
     const ogDescriptionMeta = metas.find(
       (meta) => meta.metaKey === META_KEYS.RANKMATH_FB_DESCRIPTION,
     );
-    const ogDescription = ogDescriptionMeta?.metaValue || seoDescription;
-
+    const ogDescription = ogDescriptionMeta?.metaValue ?? seoDescription;
     const ogImageMeta = metas.find(
       (meta) => meta.metaKey === META_KEYS.RANKMATH_FB_IMAGE,
     );
-    const ogImage = ogImageMeta?.metaValue || '';
+    const ogImage = ogImageMeta?.metaValue ?? '';
 
     // Twitter fields
     const twitterTitleMeta = metas.find(
       (meta) => meta.metaKey === META_KEYS.RANKMATH_TWITTER_TITLE,
     );
-    const twitterTitle = twitterTitleMeta?.metaValue || ogTitle;
-
+    const twitterTitle = twitterTitleMeta?.metaValue ?? ogTitle;
     const twitterDescriptionMeta = metas.find(
       (meta) => meta.metaKey === META_KEYS.RANKMATH_TWITTER_DESCRIPTION,
     );
     const twitterDescription =
-      twitterDescriptionMeta?.metaValue || ogDescription;
+      twitterDescriptionMeta?.metaValue ?? ogDescription;
 
     const twitterImageMeta = metas.find(
       (meta) => meta.metaKey === META_KEYS.RANKMATH_TWITTER_IMAGE,
     );
-    const twitterImage = twitterImageMeta?.metaValue || ogImage;
+    const twitterImage = twitterImageMeta?.metaValue ?? ogImage;
 
     return {
       title: seoTitle,
