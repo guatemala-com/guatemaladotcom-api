@@ -4,6 +4,8 @@
  * Represents a learning category for read-only operations.
  * This is a domain entity that encapsulates the business logic for categories.
  */
+import { CategoryResponseDto } from '../../application/dtos/category.dto';
+
 export class LearnCategory {
   constructor(
     public readonly id: number,
@@ -34,7 +36,7 @@ export class LearnCategory {
   /**
    * Get category information for API responses
    */
-  toResponse() {
+  toResponse(): CategoryResponseDto {
     return {
       id: this.id,
       name: this.name,
