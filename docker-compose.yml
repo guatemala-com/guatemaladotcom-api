@@ -20,17 +20,7 @@ services:
       - guatemaladotcom-network
     command: --default-authentication-plugin=mysql_native_password --max_allowed_packet=1073741824
 
-  # Opcional: Adminer para administrar la base de datos
-  adminer:
-    image: adminer:4.8.1
-    container_name: guatemaladotcom-adminer
-    restart: unless-stopped
-    ports:
-      - '8080:8080'
-    networks:
-      - guatemaladotcom-network
-    depends_on:
-      - mysql
+
 
 volumes:
   mysql_data:

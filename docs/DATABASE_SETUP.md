@@ -53,20 +53,8 @@ docker-compose logs mysql
 
 ### 3. Access the Database
 
-#### Option 1: Adminer (Web Interface)
-```bash
-# Start Adminer
-docker-compose up -d adminer
+#### Option 1: MySQL Client
 
-# Access http://localhost:8080
-# System: MySQL
-# Server: mysql
-# User: guatemala_user (or root for full access)
-# Password: the one you configured in .env
-# Database: aprende_db
-```
-
-#### Option 2: MySQL Client
 ```bash
 # Connect with MySQL client
 mysql -h localhost -P 3306 -u guatemala_user -p aprende_db
@@ -74,6 +62,23 @@ mysql -h localhost -P 3306 -u guatemala_user -p aprende_db
 # Or as root
 mysql -h localhost -P 3306 -u root -p aprende_db
 ```
+
+#### Option 2: GUI Tools (Recommended)
+
+For a better visual experience, you can use:
+
+- **MySQL Workbench**: Official MySQL GUI tool
+- **DBeaver**: Universal database tool
+- **phpMyAdmin**: Web-based MySQL administration tool
+- **TablePlus**: Modern database GUI tool
+
+**Connection settings for any GUI tool**:
+
+- Host: `localhost`
+- Port: `3306`
+- User: `guatemala_user` (or `root` for full access)
+- Password: the one configured in .env
+- Database: `aprende_db`
 
 ### 4. Generate Prisma Client
 
@@ -93,21 +98,25 @@ npx prisma studio
 ### Main Tables
 
 #### `apr_posts`
+
 - **Purpose**: Main content (posts, pages, etc.)
 - **Key fields**: `post_title`, `post_content`, `post_type`, `post_status`
 - **Relations**: Connects with `apr_postmeta` for metadata
 
 #### `apr_postmeta`
+
 - **Purpose**: Metadata and custom fields
 - **Key fields**: `meta_key`, `meta_value`
 - **Usage**: SEO, configurations, additional data
 
 #### `apr_users`
+
 - **Purpose**: User and author information
 - **Key fields**: `user_login`, `display_name`, `user_email`
 - **Security**: Includes `user_pass` for authentication
 
 #### `apr_learn_meta`
+
 - **Purpose**: Educational content with sponsors
 - **Key fields**: `url`, `author_name`, `is_sponsored`
 - **Functionality**: Sponsored educational content management
@@ -115,6 +124,7 @@ npx prisma studio
 ## Useful Commands
 
 ### Docker
+
 ```bash
 # Stop all services
 docker-compose down
@@ -130,6 +140,7 @@ docker-compose logs -f mysql
 ```
 
 ### Prisma
+
 ```bash
 # Synchronize schema with database
 npx prisma db push
@@ -144,12 +155,14 @@ npx prisma migrate reset
 ## Troubleshooting
 
 ### Error: "Table doesn't exist"
+
 ```bash
 # Verify dump was loaded correctly
 docker-compose exec mysql mysql -u root -p aprende_db -e "SHOW TABLES;"
 ```
 
 ### Error: "Connection refused"
+
 ```bash
 # Verify MySQL is running
 docker-compose ps mysql
@@ -159,6 +172,7 @@ docker-compose logs mysql
 ```
 
 ### Error: "Access denied"
+
 ```bash
 # Verify environment variables
 docker-compose exec mysql env | grep MYSQL
@@ -193,4 +207,4 @@ docker-compose exec mysql mysql -u root -p aprende_db -e "SELECT COUNT(*) FROM a
 1. **Implement modules**: Create controllers and services for tables
 2. **Optimize queries**: Use indexes and efficient queries
 3. **Cache data**: Implement Redis for improved performance
-4. **Monitoring**: Configure logs and database metrics 
+4. **Monitoring**: Configure logs and database metrics

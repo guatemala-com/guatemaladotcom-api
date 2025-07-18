@@ -1,3 +1,4 @@
+
 # Prisma Schema Cleanup - Guatemala.com API
 
 ## Summary of Changes
@@ -8,6 +9,7 @@
 ## Removed Models
 
 ### `AprUsers` (Removed in second iteration)
+
 - **Reason**: The `apr_users` table does not exist in the real database
 - **Impact**: Completely removed from the schema
 - **Note**: Authors are likely managed differently or are in a separate database
@@ -15,9 +17,11 @@
 ## Preserved and Adjusted Models
 
 ### `AprPosts` (WordPress Posts)
+
 **Preserved**: Essential for the site's main content
 
 **Complete structure based on real DB**:
+
 - `id` (ID) - Unique post identifier
 - `postAuthor` (post_author) - Author ID
 - `postDate` (post_date) - Publication date
@@ -45,9 +49,11 @@
 **Indexes**: Match exactly with the real database
 
 ### `AprPostmeta` (WordPress Post Meta)
+
 **Preserved**: Essential for metadata, custom fields, and SEO
 
 **Complete structure**:
+
 - `metaId` (meta_id) - Unique metadata identifier
 - `postId` (post_id) - Post reference
 - `metaKey` (meta_key) - Metadata key
@@ -56,9 +62,11 @@
 **Indexes**: Includes indexes on `post_id` and `meta_key`
 
 ### `AprLearnMeta` (Learn Meta)
+
 **Restored**: Educational content with sponsor information
 
 **Complete structure based on real DB**:
+
 - `id` (ID) - Unique identifier
 - `url` (url) - Content URL
 - `thumbnailId` (thumbnail_id) - Thumbnail image ID
@@ -78,28 +86,30 @@
 ## Docker Configuration
 
 ### Database
+
 - **Image**: MySQL 8.0
 - **Initialization**: Automatic with SQL dump
 - **Volume**: Data persistence
 - **Port**: 3306
 
-### Adminer
-- **Image**: Adminer 4.8.1
-- **Port**: 8080
-- **Access**: http://localhost:8080
+### Database Access
+
+For database administration, use external tools like:
+
+- **MySQL Workbench**: Official MySQL GUI tool
+- **DBeaver**: Universal database tool
+- **TablePlus**: Modern database GUI tool
 
 ### Docker Commands
+
 ```bash
 # Start database
 docker compose up -d mysql
 
-# Start Adminer
-docker compose up -d adminer
-
 # View logs
 docker compose logs mysql
 
-# Access MySQL
+# Access MySQL via command line
 docker compose exec mysql mysql -u root -p aprende_db
 ```
 
@@ -115,26 +125,31 @@ docker compose exec mysql mysql -u root -p aprende_db
 ## Final Structure
 
 ### Main Content
+
 - **`apr_posts`**: 56,977 posts, pages and content
 - **`apr_postmeta`**: 759,847 metadata and custom fields
 
 ### Educational Content
+
 - **`apr_learn_meta`**: 5,983 educational content records with sponsors
 
 ## Important Notes
 
 ### Author Management
+
 - Authors are referenced by ID in `post_author` of `apr_posts`
 - The `apr_users` table does not exist in this database
 - Users are likely in another database or system
 
 ### Production Data
+
 - The database contains real production data
 - Total posts: 56,977
 - Total metadata: 759,847
 - Educational content: 5,983 records
 
 ### Performance
+
 - The database is considerably large
 - Appropriate indexes are recommended (already included)
 - Consider pagination for large queries
@@ -166,10 +181,10 @@ npx prisma studio
 ## Environment Configuration
 
 The `.env` file should include:
+
 ```env
 DATABASE_URL="mysql://guatemala_user:password@localhost:3306/aprende_db"
 MYSQL_ROOT_PASSWORD=root123
 MYSQL_DATABASE=aprende_db
 MYSQL_USER=guatemala_user
 MYSQL_PASSWORD=password
-``` 
