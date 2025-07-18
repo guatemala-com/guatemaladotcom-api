@@ -30,67 +30,112 @@ export class LearnRepositoryImpl implements LearnRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async getCategories(): Promise<LearnCategory[]> {
-    const mockCategories = [
-      {
-        id: 1,
-        name: 'Category 1',
-        slug: 'category-1',
-        description: 'Description 1',
+    // Get all categories from WordPress database
+    const categories = await this.prisma.aprTermTaxonomy.findMany({
+      where: {
+        taxonomy: 'category',
+        count: {
+          gt: 0, // Only categories with articles
+        },
       },
-      {
-        id: 2,
-        name: 'Category 2',
-        slug: 'category-2',
-        description: 'Description 2',
+      include: {
+        term: true,
       },
-    ];
+      orderBy: {
+        term: {
+          name: 'asc',
+        },
+      },
+    });
 
-    return Promise.resolve(
-      mockCategories.map((category) => {
-        return new LearnCategory(
-          category.id,
-          category.name,
-          category.slug,
-          category.description,
-          new Date(),
-          new Date(),
-        );
-      }),
+    // Convert to domain entities and build hierarchy
+    const categoryEntities = categories.map(category => 
+      LearnCategory.fromDatabase({
+        id: Number(category.term.termId),
+        name: category.term.name,
+        slug: category.term.slug,
+        description: category.description,
+        parent: Number(category.parent),
+        count: Number(category.count),
+        createdAt: new Date(), // WordPress doesn't track creation dates for terms
+        updatedAt: new Date(),
+      })
     );
+
+    // Build hierarchical structure
+    return this.buildHierarchy(categoryEntities);
   }
 
-  getCategoryById(id: number): Promise<LearnCategory | null> {
-    const mockCategories = [
-      {
-        id: 1,
-        name: 'Category 1',
-        slug: 'category-1',
-        description: 'Description 1',
+  async getCategoryById(id: number): Promise<LearnCategory | null> {
+    const category = await this.prisma.aprTermTaxonomy.findFirst({
+      where: {
+        term: {
+          termId: BigInt(id),
+        },
+        taxonomy: 'category',
       },
-      {
-        id: 2,
-        name: 'Category 2',
-        slug: 'category-2',
-        description: 'Description 2',
+      include: {
+        term: true,
       },
-    ];
-
-    const category = mockCategories.find((cat) => cat.id === id);
+    });
 
     if (!category) {
-      return Promise.resolve(null);
+      return null;
     }
 
-    return Promise.resolve(
-      new LearnCategory(
-        category.id,
-        category.name,
-        category.slug,
-        category.description,
-        new Date(),
-        new Date(),
-      ),
-    );
+    return LearnCategory.fromDatabase({
+      id: Number(category.term.termId),
+      name: category.term.name,
+      slug: category.term.slug,
+      description: category.description,
+      parent: Number(category.parent),
+      count: Number(category.count),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+  }
+
+  /**
+   * Build hierarchical structure from flat category list
+   */
+  private buildHierarchy(categories: LearnCategory[]): LearnCategory[] {
+    const categoryMap = new Map<number, LearnCategory>();
+    const rootCategories: LearnCategory[] = [];
+
+    // First pass: create map of all categories
+    categories.forEach(category => {
+      categoryMap.set(category.id, category);
+    });
+
+    // Second pass: build hierarchy
+    categories.forEach(category => {
+      if (category.parent === 0) {
+        // Root category
+        rootCategories.push(category);
+      } else {
+        // Child category - find parent and add to its children
+        const parent = categoryMap.get(category.parent);
+        if (parent) {
+          // Create a new category with updated children
+          const updatedChildren = [...parent.children, category];
+          const updatedParent = new LearnCategory(
+            parent.id,
+            parent.name,
+            parent.slug,
+            parent.description,
+            parent.parent,
+            parent.count,
+            updatedChildren,
+            parent.createdAt,
+            parent.updatedAt,
+          );
+          categoryMap.set(parent.id, updatedParent);
+        }
+      }
+    });
+
+    // Return root categories (with their children populated)
+    return rootCategories.map(category => categoryMap.get(category.id)).filter(Boolean) as LearnCategory[];
   }
 
   async getLearnPostById(id: number): Promise<LearnPost | null> {

@@ -68,12 +68,14 @@ describe('LearnController', () => {
 
   describe('getCategoryById', () => {
     it('should return a category DTO if found', async () => {
+      getCategoryByIdUseCaseExecuteMock.mockResolvedValue(mockCategories[0]);
       const result = await controller.getCategoryById(1);
       expect(result).toEqual(mockCategories[0]);
       expect(getCategoryByIdUseCaseExecuteMock).toHaveBeenCalledWith(1);
     });
 
     it('should return undefined if category is not found', async () => {
+      getCategoryByIdUseCaseExecuteMock.mockResolvedValue(undefined);
       const result = await controller.getCategoryById(999);
       expect(result).toBeUndefined();
       expect(getCategoryByIdUseCaseExecuteMock).toHaveBeenCalledWith(999);
