@@ -49,7 +49,7 @@ export class LearnRepositoryImpl implements LearnRepository {
     });
 
     // Convert to domain entities and build hierarchy
-    const categoryEntities = categories.map(category => 
+    const categoryEntities = categories.map((category) =>
       LearnCategory.fromDatabase({
         id: Number(category.term.termId),
         name: category.term.name,
@@ -59,7 +59,7 @@ export class LearnRepositoryImpl implements LearnRepository {
         count: Number(category.count),
         createdAt: new Date(), // WordPress doesn't track creation dates for terms
         updatedAt: new Date(),
-      })
+      }),
     );
 
     // Build hierarchical structure
@@ -103,12 +103,12 @@ export class LearnRepositoryImpl implements LearnRepository {
     const rootCategories: LearnCategory[] = [];
 
     // First pass: create map of all categories
-    categories.forEach(category => {
+    categories.forEach((category) => {
       categoryMap.set(category.id, category);
     });
 
     // Second pass: build hierarchy
-    categories.forEach(category => {
+    categories.forEach((category) => {
       if (category.parent === 0) {
         // Root category
         rootCategories.push(category);
@@ -135,7 +135,9 @@ export class LearnRepositoryImpl implements LearnRepository {
     });
 
     // Return root categories (with their children populated)
-    return rootCategories.map(category => categoryMap.get(category.id)).filter(Boolean) as LearnCategory[];
+    return rootCategories
+      .map((category) => categoryMap.get(category.id))
+      .filter(Boolean) as LearnCategory[];
   }
 
   async getLearnPostById(id: number): Promise<LearnPost | null> {

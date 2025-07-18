@@ -42,7 +42,7 @@ export class LearnCategory {
       description: this.description,
       parent: this.parent,
       count: this.count,
-      children: this.children.map(child => child.toResponse()),
+      children: this.children.map((child) => child.toResponse()),
       createdAt: this.createdAt.toISOString(),
       updatedAt: this.updatedAt.toISOString(),
     };

@@ -27,6 +27,7 @@ El endpoint `GET /learn/article/:id` ahora incluye un objeto `seo` completo con 
 ## Campos SEO
 
 ### Campos básicos
+
 - **title**: Título SEO del artículo (fallback: título del post)
 - **description**: Descripción SEO del artículo (fallback: excerpt del post)
 - **canonical**: URL canónica del artículo
@@ -34,11 +35,13 @@ El endpoint `GET /learn/article/:id` ahora incluye un objeto `seo` completo con 
 - **seo_score**: Puntuación SEO de RankMath (0-100)
 
 ### Open Graph (Facebook)
+
 - **og_title**: Título para compartir en Facebook (fallback: title SEO)
 - **og_description**: Descripción para Facebook (fallback: description SEO)
 - **og_image**: Imagen para compartir en Facebook
 
 ### Twitter Cards
+
 - **twitter_title**: Título para Twitter (fallback: og_title)
 - **twitter_description**: Descripción para Twitter (fallback: og_description)
 - **twitter_image**: Imagen para Twitter (fallback: og_image)
@@ -105,4 +108,4 @@ Los datos SEO se obtienen de la tabla `apr_postmeta` usando las siguientes meta_
 2. **Redes sociales**: Contenido optimizado para compartir en Facebook y Twitter
 3. **Canonical URLs**: Evita contenido duplicado
 4. **Monitoreo**: Puntuación SEO para evaluar optimización
-5. **Palabras clave**: Tracking de palabras clave principales 
+5. **Palabras clave**: Tracking de palabras clave principales
