@@ -10,6 +10,7 @@ export class CategoryResponseDto {
   name: string;
   slug: string;
   description: string;
-  createdAt: string;
-  updatedAt: string;
+  parent: number;
+  count: number;
+  children: CategoryResponseDto[];
 }

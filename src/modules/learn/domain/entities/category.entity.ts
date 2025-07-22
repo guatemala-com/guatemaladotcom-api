@@ -4,27 +4,45 @@
  * Represents a learning category for read-only operations.
  * This is a domain entity that encapsulates the business logic for categories.
  */
+import { CategoryResponseDto } from '../../application/dtos/category.dto';
+
 export class LearnCategory {
   constructor(
     public readonly id: number,
     public readonly name: string,
     public readonly slug: string,
     public readonly description: string,
-    public readonly createdAt: Date,
-    public readonly updatedAt: Date,
+    public readonly parent: number,
+    public readonly count: number,
+    public readonly children: LearnCategory[],
   ) {}
+
+  /**
+   * Check if this category has children
+   */
+  hasChildren(): boolean {
+    return this.children.length > 0;
+  }
+
+  /**
+   * Check if this category is a root category (no parent)
+   */
+  isRoot(): boolean {
+    return this.parent === 0;
+  }
 
   /**
    * Get category information for API responses
    */
-  toResponse() {
+  toResponse(): CategoryResponseDto {
     return {
       id: this.id,
       name: this.name,
       slug: this.slug,
       description: this.description,
-      createdAt: this.createdAt.toISOString(),
-      updatedAt: this.updatedAt.toISOString(),
+      parent: this.parent,
+      count: this.count,
+      children: this.children.map((child) => child.toResponse()),
     };
   }
 
@@ -36,16 +54,18 @@ export class LearnCategory {
     name: string;
     slug: string;
     description: string;
-    createdAt: Date;
-    updatedAt: Date;
+    parent: number;
+    count: number;
+    children?: LearnCategory[];
   }): LearnCategory {
     return new LearnCategory(
       data.id,
       data.name,
       data.slug,
       data.description,
-      data.createdAt,
-      data.updatedAt,
+      data.parent,
+      data.count,
+      data.children || [],
     );
   }
 }
