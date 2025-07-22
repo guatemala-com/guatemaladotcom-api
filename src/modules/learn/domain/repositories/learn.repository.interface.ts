@@ -4,5 +4,6 @@ import { LearnPost } from '../entities/learn-post.entity';
 export interface LearnRepository {
   getCategories(): Promise<LearnCategory[]>;
   getCategoryById(id: number): Promise<LearnCategory | null>;
+  getCategoryBySlug(slug: string): Promise<LearnCategory | null>;
   getLearnPostById(id: number): Promise<LearnPost | null>;
 }

@@ -75,6 +75,9 @@ export class LearnRepositoryImpl implements LearnRepository {
       return null;
     }
 
+    // Get children for this specific category
+    const children = await this.getCategoryChildren(Number(category.term.termId));
+
     return LearnCategory.fromDatabase({
       id: Number(category.term.termId),
       name: category.term.name,
@@ -82,7 +85,81 @@ export class LearnRepositoryImpl implements LearnRepository {
       description: category.description,
       parent: Number(category.parent),
       count: Number(category.count),
+      children,
     });
+  }
+
+  async getCategoryBySlug(slug: string): Promise<LearnCategory | null> {
+    const category: CategoryWithTerm | null =
+      await this.prisma.aprTermTaxonomy.findFirst({
+        where: {
+          term: {
+            slug: slug,
+          },
+          taxonomy: TAXONOMIES.CATEGORY,
+        },
+        include: {
+          term: true,
+        },
+      });
+
+    if (!category) {
+      return null;
+    }
+
+    // Get children for this specific category
+    const children = await this.getCategoryChildren(Number(category.term.termId));
+
+    return LearnCategory.fromDatabase({
+      id: Number(category.term.termId),
+      name: category.term.name,
+      slug: category.term.slug,
+      description: category.description,
+      parent: Number(category.parent),
+      count: Number(category.count),
+      children,
+    });
+  }
+
+  /**
+   * Get all children categories for a specific parent category ID
+   */
+  private async getCategoryChildren(parentId: number): Promise<LearnCategory[]> {
+    // Get direct children
+    const directChildren: CategoryWithTerm[] =
+      await this.prisma.aprTermTaxonomy.findMany({
+        where: {
+          parent: BigInt(parentId),
+          taxonomy: TAXONOMIES.CATEGORY,
+        },
+        include: {
+          term: true,
+        },
+        orderBy: {
+          term: {
+            name: 'asc',
+          },
+        },
+      });
+
+    // Recursively build children with their own children
+    const children: LearnCategory[] = [];
+    for (const child of directChildren) {
+      const childId = Number(child.term.termId);
+      const grandChildren = await this.getCategoryChildren(childId);
+      
+      children.push(LearnCategory.fromDatabase({
+        id: childId,
+        name: child.term.name,
+        slug: child.term.slug,
+        description: child.description,
+        parent: Number(child.parent),
+        count: Number(child.count),
+        children: grandChildren,
+      }));
+    }
+
+    return children;
   }
 
   /**

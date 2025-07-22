@@ -191,6 +191,9 @@ describe('LearnRepositoryImpl', () => {
         mockCategory,
       );
 
+      // Mock Prisma findMany method for children lookup
+      mockPrismaService.aprTermTaxonomy.findMany.mockResolvedValue([]);
+
       const id = 1;
       const category = await repository.getCategoryById(id);
 

@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { LearnController } from '../learn.controller';
 import { GetCategoriesUseCase } from '../../../application/use-cases/get-categories.use-case';
 import { GetCategoryByIdUseCase } from '../../../application/use-cases/get-category-by-id.use-case';
+import { GetCategoryBySlugUseCase } from '../../../application/use-cases/get-category-by-slug.use-case';
 import { GetLearnPostByIdUseCase } from '../../../application/use-cases/get-learn-post-by-id.use-case';
 import {
   mockCategories,
@@ -12,6 +13,7 @@ describe('LearnController', () => {
   let controller: LearnController;
   let getCategoriesUseCaseExecuteMock: jest.Mock;
   let getCategoryByIdUseCaseExecuteMock: jest.Mock;
+  let getCategoryBySlugUseCaseExecuteMock: jest.Mock;
   let getLearnPostByIdUseCaseExecuteMock: jest.Mock;
 
   beforeEach(async () => {
@@ -22,6 +24,11 @@ describe('LearnController', () => {
       .fn()
       .mockImplementation((id: number) =>
         Promise.resolve(mockCategories.find((cat) => cat.id === id)),
+      );
+    getCategoryBySlugUseCaseExecuteMock = jest
+      .fn()
+      .mockImplementation((slug: string) =>
+        Promise.resolve(mockCategories.find((cat) => cat.slug === slug)),
       );
     getLearnPostByIdUseCaseExecuteMock = jest
       .fn()
@@ -40,6 +47,12 @@ describe('LearnController', () => {
           provide: GetCategoryByIdUseCase,
           useValue: {
             execute: getCategoryByIdUseCaseExecuteMock,
+          },
+        },
+        {
+          provide: GetCategoryBySlugUseCase,
+          useValue: {
+            execute: getCategoryBySlugUseCaseExecuteMock,
           },
         },
         {
@@ -66,19 +79,30 @@ describe('LearnController', () => {
     });
   });
 
-  describe('getCategoryById', () => {
-    it('should return a category DTO if found', async () => {
+  describe('getCategoryBySlug', () => {
+    it('should return a category DTO if found by slug', async () => {
+      getCategoryBySlugUseCaseExecuteMock.mockResolvedValue(mockCategories[0]);
+      const result = await controller.getCategoryBySlug('technology');
+      expect(result).toEqual(mockCategories[0]);
+      expect(getCategoryBySlugUseCaseExecuteMock).toHaveBeenCalledWith(
+        'technology',
+      );
+    });
+
+    it('should return a category DTO if found by numeric ID (backward compatibility)', async () => {
       getCategoryByIdUseCaseExecuteMock.mockResolvedValue(mockCategories[0]);
-      const result = await controller.getCategoryById(1);
+      const result = await controller.getCategoryBySlug('1');
       expect(result).toEqual(mockCategories[0]);
       expect(getCategoryByIdUseCaseExecuteMock).toHaveBeenCalledWith(1);
     });
 
-    it('should return undefined if category is not found', async () => {
-      getCategoryByIdUseCaseExecuteMock.mockResolvedValue(undefined);
-      const result = await controller.getCategoryById(999);
+    it('should return undefined if category is not found by slug', async () => {
+      getCategoryBySlugUseCaseExecuteMock.mockResolvedValue(undefined);
+      const result = await controller.getCategoryBySlug('non-existent-slug');
       expect(result).toBeUndefined();
-      expect(getCategoryByIdUseCaseExecuteMock).toHaveBeenCalledWith(999);
+      expect(getCategoryBySlugUseCaseExecuteMock).toHaveBeenCalledWith(
+        'non-existent-slug',
+      );
     });
   });
 
