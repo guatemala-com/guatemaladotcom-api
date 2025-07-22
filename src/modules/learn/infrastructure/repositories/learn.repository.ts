@@ -96,7 +96,7 @@ export class LearnRepositoryImpl implements LearnRepository {
     // First pass: create map of all categories and build parent-child relationships
     categories.forEach((category) => {
       categoryMap.set(category.id, category);
-      
+
       if (category.parent === 0) {
         rootCategoryIds.push(category.id);
       } else {
@@ -112,10 +112,12 @@ export class LearnRepositoryImpl implements LearnRepository {
     const buildCategoryWithChildren = (categoryId: number): LearnCategory => {
       const category = categoryMap.get(categoryId)!;
       const childIds = childrenMap.get(categoryId) || [];
-      
+
       // Recursively build children
-      const children = childIds.map(childId => buildCategoryWithChildren(childId));
-      
+      const children = childIds.map((childId) =>
+        buildCategoryWithChildren(childId),
+      );
+
       // Return category with populated children
       return new LearnCategory(
         category.id,
@@ -129,7 +131,7 @@ export class LearnRepositoryImpl implements LearnRepository {
     };
 
     // Build root categories with all their nested children
-    return rootCategoryIds.map(rootId => buildCategoryWithChildren(rootId));
+    return rootCategoryIds.map((rootId) => buildCategoryWithChildren(rootId));
   }
   async getLearnPostById(id: number): Promise<LearnPost | null> {
     const post = await this.prisma.aprPosts.findUnique({

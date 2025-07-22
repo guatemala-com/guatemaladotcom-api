@@ -5,7 +5,7 @@ import {
   LearnPostAuthor,
   LearnPostSponsor,
   LearnPostSeo,
-} from '../../domain/entities/learn-post.entity';
+} from '../../domain/types/learn-post.types';
 import { LearnCategory } from '../../domain/entities/category.entity';
 import { META_KEYS } from '../consts/meta-keys.const';
 import { TAXONOMIES } from '../consts/taxonomies';
