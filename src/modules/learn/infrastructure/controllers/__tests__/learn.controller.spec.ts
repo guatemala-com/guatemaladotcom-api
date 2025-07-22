@@ -4,6 +4,7 @@ import { GetCategoriesUseCase } from '../../../application/use-cases/get-categor
 import { GetCategoryByIdUseCase } from '../../../application/use-cases/get-category-by-id.use-case';
 import { GetCategoryBySlugUseCase } from '../../../application/use-cases/get-category-by-slug.use-case';
 import { GetLearnPostByIdUseCase } from '../../../application/use-cases/get-learn-post-by-id.use-case';
+import { GetArticlesByCategoryUseCase } from '../../../application/use-cases/get-articles-by-category.use-case';
 import {
   mockCategories,
   mockLearnPost,
@@ -15,6 +16,7 @@ describe('LearnController', () => {
   let getCategoryByIdUseCaseExecuteMock: jest.Mock;
   let getCategoryBySlugUseCaseExecuteMock: jest.Mock;
   let getLearnPostByIdUseCaseExecuteMock: jest.Mock;
+  let getArticlesByCategoryUseCaseExecuteMock: jest.Mock;
 
   beforeEach(async () => {
     getCategoriesUseCaseExecuteMock = jest
@@ -33,6 +35,19 @@ describe('LearnController', () => {
     getLearnPostByIdUseCaseExecuteMock = jest
       .fn()
       .mockResolvedValue(mockLearnPost);
+    getArticlesByCategoryUseCaseExecuteMock = jest
+      .fn()
+      .mockResolvedValue({
+        articles: [],
+        pagination: {
+          page: 1,
+          limit: 10,
+          total: 0,
+          totalPages: 0,
+          hasNextPage: false,
+          hasPreviousPage: false,
+        },
+      });
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [LearnController],
@@ -59,6 +74,12 @@ describe('LearnController', () => {
           provide: GetLearnPostByIdUseCase,
           useValue: {
             execute: getLearnPostByIdUseCaseExecuteMock,
+          },
+        },
+        {
+          provide: GetArticlesByCategoryUseCase,
+          useValue: {
+            execute: getArticlesByCategoryUseCaseExecuteMock,
           },
         },
       ],

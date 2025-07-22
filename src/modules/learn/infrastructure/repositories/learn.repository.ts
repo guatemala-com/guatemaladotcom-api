@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { LearnRepository } from '../../domain/repositories/learn.repository.interface';
+import {
+  LearnRepository,
+  PaginationOptions,
+  PaginatedResult,
+} from '../../domain/repositories/learn.repository.interface';
 import { LearnCategory } from '../../domain/entities/category.entity';
 import { LearnPost } from '../../domain/entities/learn-post.entity';
 import { PrismaService } from '../../../prisma/infrastructure/prisma.service';
@@ -76,7 +80,9 @@ export class LearnRepositoryImpl implements LearnRepository {
     }
 
     // Get children for this specific category
-    const children = await this.getCategoryChildren(Number(category.term.termId));
+    const children = await this.getCategoryChildren(
+      Number(category.term.termId),
+    );
 
     return LearnCategory.fromDatabase({
       id: Number(category.term.termId),
@@ -108,7 +114,9 @@ export class LearnRepositoryImpl implements LearnRepository {
     }
 
     // Get children for this specific category
-    const children = await this.getCategoryChildren(Number(category.term.termId));
+    const children = await this.getCategoryChildren(
+      Number(category.term.termId),
+    );
 
     return LearnCategory.fromDatabase({
       id: Number(category.term.termId),
@@ -124,7 +132,9 @@ export class LearnRepositoryImpl implements LearnRepository {
   /**
    * Get all children categories for a specific parent category ID
    */
-  private async getCategoryChildren(parentId: number): Promise<LearnCategory[]> {
+  private async getCategoryChildren(
+    parentId: number,
+  ): Promise<LearnCategory[]> {
     // Get direct children
     const directChildren: CategoryWithTerm[] =
       await this.prisma.aprTermTaxonomy.findMany({
@@ -147,16 +157,18 @@ export class LearnRepositoryImpl implements LearnRepository {
     for (const child of directChildren) {
       const childId = Number(child.term.termId);
       const grandChildren = await this.getCategoryChildren(childId);
-      
-      children.push(LearnCategory.fromDatabase({
-        id: childId,
-        name: child.term.name,
-        slug: child.term.slug,
-        description: child.description,
-        parent: Number(child.parent),
-        count: Number(child.count),
-        children: grandChildren,
-      }));
+
+      children.push(
+        LearnCategory.fromDatabase({
+          id: childId,
+          name: child.term.name,
+          slug: child.term.slug,
+          description: child.description,
+          parent: Number(child.parent),
+          count: Number(child.count),
+          children: grandChildren,
+        }),
+      );
     }
 
     return children;
@@ -281,5 +293,138 @@ export class LearnRepositoryImpl implements LearnRepository {
       sponsor,
       seo,
     });
+  }
+
+  async getArticlesByCategory(
+    categorySlug: string,
+    options: PaginationOptions,
+  ): Promise<PaginatedResult<LearnPost>> {
+    // First, find the category by slug to get its ID
+    const category = await this.prisma.aprTermTaxonomy.findFirst({
+      where: {
+        term: {
+          slug: categorySlug,
+        },
+        taxonomy: TAXONOMIES.CATEGORY,
+      },
+      include: {
+        term: true,
+      },
+    });
+
+    if (!category) {
+      return {
+        data: [],
+        total: 0,
+      };
+    }
+
+    // Calculate pagination
+    const skip = (options.page - 1) * options.limit;
+
+    // Get posts that belong to this category
+    const [posts, total] = await Promise.all([
+      this.prisma.aprPosts.findMany({
+        where: {
+          postType: 'post',
+          postStatus: POST_STATUS.PUBLISH,
+          termRelationships: {
+            some: {
+              termTaxonomyId: category.termTaxonomyId,
+            },
+          },
+        },
+        include: {
+          metas: {
+            where: {
+              metaKey: META_KEYS.THUMBNAIL_ID,
+            },
+          },
+          termRelationships: {
+            include: {
+              termTaxonomy: {
+                include: {
+                  term: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: {
+          postDate: 'desc',
+        },
+        skip,
+        take: options.limit,
+      }),
+      this.prisma.aprPosts.count({
+        where: {
+          postType: 'post',
+          postStatus: POST_STATUS.PUBLISH,
+          termRelationships: {
+            some: {
+              termTaxonomyId: category.termTaxonomyId,
+            },
+          },
+        },
+      }),
+    ]);
+
+    // Build LearnPost entities for each post
+    const learnPosts = await Promise.all(
+      posts.map(async (post) => {
+        const learnMeta = await this.prisma.aprLearnMeta.findUnique({
+          where: { id: Number(post.id) },
+        });
+
+        // Get attachment data for thumbnail
+        const thumbnailMeta = post.metas.find(
+          (meta) => meta.metaKey === META_KEYS.THUMBNAIL_ID,
+        );
+
+        let attachment: AttachmentPost | null = null;
+        if (thumbnailMeta?.metaValue) {
+          const attachmentId = parseInt(thumbnailMeta.metaValue, 10);
+          attachment = await this.prisma.aprPosts.findUnique({
+            where: { id: BigInt(attachmentId) },
+            include: { metas: true },
+          });
+        }
+
+        // Build the learn post components
+        const images = this.learnPostBuilder.buildImages(attachment);
+        const categories = this.learnPostBuilder.buildCategories(
+          post.termRelationships,
+        );
+        const author = this.learnPostBuilder.buildAuthor(post.postAuthor);
+        const sponsor = this.learnPostBuilder.buildSponsor(learnMeta);
+        const seo = this.learnPostBuilder.buildSeo(
+          [],
+          post.postTitle,
+          post.postExcerpt,
+        );
+
+        return LearnPost.fromDatabase({
+          id: Number(post.id),
+          url: `${this.configService.get('APP_URL')}/${post.postName}`,
+          title: post.postTitle,
+          excerpt: post.postExcerpt,
+          date: post.postDate.toISOString(),
+          images,
+          locationGeopoint: null,
+          content: '',
+          categories,
+          author,
+          keywords: [],
+          isSponsored: learnMeta?.isSponsored ? 1 : 0,
+          sponsor,
+          seo,
+        });
+      }),
+    );
+
+    return {
+      data: learnPosts,
+      total,
+    };
   }
 }
