@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { LearnRepositoryImpl } from '../learn.repository';
 import { PrismaService } from '../../../../prisma/infrastructure/prisma.service';
 import { LearnCategory } from '../../../domain/entities/category.entity';
+import { LearnPostBuilderService } from '../../services/learn-post-builder.service';
+import { ConfigService } from '@nestjs/config';
 
 describe('LearnRepositoryImpl', () => {
   let repository: LearnRepositoryImpl;
@@ -18,6 +20,18 @@ describe('LearnRepositoryImpl', () => {
               findMany: jest.fn(),
               findFirst: jest.fn(),
             },
+          },
+        },
+        {
+          provide: LearnPostBuilderService,
+          useValue: {
+            buildHierarchy: jest.fn(),
+          },
+        },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn().mockReturnValue('https://test.example.com'),
           },
         },
       ],

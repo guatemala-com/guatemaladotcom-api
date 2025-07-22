@@ -2,7 +2,6 @@ import { CategoryResponseDto } from '../category.dto';
 
 describe('CategoryResponseDto', () => {
   it('should create an instance with all properties assigned', () => {
-    const now = new Date().toISOString();
     const childDto = new CategoryResponseDto();
     childDto.id = 2;
     childDto.name = 'Child Category';
@@ -11,8 +10,6 @@ describe('CategoryResponseDto', () => {
     childDto.parent = 1;
     childDto.count = 5;
     childDto.children = [];
-    childDto.createdAt = now;
-    childDto.updatedAt = now;
 
     const dto = new CategoryResponseDto();
     dto.id = 1;
@@ -22,8 +19,6 @@ describe('CategoryResponseDto', () => {
     dto.parent = 0;
     dto.count = 10;
     dto.children = [childDto];
-    dto.createdAt = now;
-    dto.updatedAt = now;
 
     expect(dto).toBeInstanceOf(CategoryResponseDto);
     expect(dto.id).toBe(1);
@@ -34,8 +29,6 @@ describe('CategoryResponseDto', () => {
     expect(dto.count).toBe(10);
     expect(dto.children).toHaveLength(1);
     expect(dto.children[0]).toBe(childDto);
-    expect(dto.createdAt).toBe(now);
-    expect(dto.updatedAt).toBe(now);
   });
 
   it('should allow partial assignment', () => {
@@ -50,7 +43,5 @@ describe('CategoryResponseDto', () => {
     expect(dto.parent).toBeUndefined();
     expect(dto.count).toBeUndefined();
     expect(dto.children).toBeUndefined();
-    expect(dto.createdAt).toBeUndefined();
-    expect(dto.updatedAt).toBeUndefined();
   });
 });
