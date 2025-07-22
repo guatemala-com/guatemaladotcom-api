@@ -1,14 +1,28 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { LearnPostBuilderService } from '../learn-post-builder.service';
-import { LearnCategory } from '../../../domain/entities/category.entity';
 import { META_KEYS } from '../../consts/meta-keys.const';
-import { TAXONOMIES } from '../../consts/taxonomies';
+import { PostMeta } from '../../../domain/types/prisma-types';
+
+// Import mock data from __mocks__ folder
 import {
-  AttachmentPost,
-  TermRelationship,
-  LearnMeta,
-  PostMeta,
-} from '../../../domain/types/prisma-types';
+  mockFlatCategoryList,
+  mockMultipleRootCategories,
+  mockOrphanedCategories,
+  mockEmptyCategories,
+} from './__mocks__/category.mocks';
+import {
+  mockAttachmentWithMetas,
+  mockAttachmentWithoutMetas,
+  mockCategoryTermRelationships,
+  mockTagOnlyTermRelationships,
+  mockLocationMetas,
+  mockEmptyLocationMetas,
+  mockCompleteSeoMetas,
+  mockPartialSeoMetas,
+  mockInvalidSeoMetas,
+  mockSponsoredLearnMeta,
+  mockPartialSponsorLearnMeta,
+} from './__mocks__/test-data.mocks';
 
 describe('LearnPostBuilderService', () => {
   let service: LearnPostBuilderService;
@@ -27,38 +41,7 @@ describe('LearnPostBuilderService', () => {
 
   describe('buildHierarchy', () => {
     it('should build hierarchy from flat category list', () => {
-      const categories = [
-        new LearnCategory(
-          1,
-          'Technology',
-          'technology',
-          'Tech articles',
-          0,
-          10,
-          [],
-        ),
-        new LearnCategory(
-          2,
-          'Programming',
-          'programming',
-          'Programming articles',
-          1,
-          5,
-          [],
-        ),
-        new LearnCategory(
-          3,
-          'JavaScript',
-          'javascript',
-          'JS articles',
-          2,
-          3,
-          [],
-        ),
-        new LearnCategory(4, 'Design', 'design', 'Design articles', 1, 4, []),
-      ];
-
-      const hierarchy = service.buildHierarchy(categories);
+      const hierarchy = service.buildHierarchy(mockFlatCategoryList);
 
       expect(hierarchy).toHaveLength(1);
       expect(hierarchy[0].name).toBe('Technology');
@@ -77,29 +60,7 @@ describe('LearnPostBuilderService', () => {
     });
 
     it('should handle multiple root categories', () => {
-      const categories = [
-        new LearnCategory(
-          1,
-          'Technology',
-          'technology',
-          'Tech articles',
-          0,
-          10,
-          [],
-        ),
-        new LearnCategory(2, 'Travel', 'travel', 'Travel articles', 0, 8, []),
-        new LearnCategory(
-          3,
-          'Programming',
-          'programming',
-          'Programming articles',
-          1,
-          5,
-          [],
-        ),
-      ];
-
-      const hierarchy = service.buildHierarchy(categories);
+      const hierarchy = service.buildHierarchy(mockMultipleRootCategories);
 
       expect(hierarchy).toHaveLength(2);
       expect(hierarchy.map((c) => c.name)).toContain('Technology');
@@ -114,33 +75,12 @@ describe('LearnPostBuilderService', () => {
     });
 
     it('should handle empty category list', () => {
-      const hierarchy = service.buildHierarchy([]);
+      const hierarchy = service.buildHierarchy(mockEmptyCategories);
       expect(hierarchy).toHaveLength(0);
     });
 
     it('should handle categories with orphaned children', () => {
-      const categories = [
-        new LearnCategory(
-          1,
-          'Technology',
-          'technology',
-          'Tech articles',
-          0,
-          10,
-          [],
-        ),
-        new LearnCategory(
-          3,
-          'JavaScript',
-          'javascript',
-          'JS articles',
-          2,
-          3,
-          [],
-        ),
-      ];
-
-      const hierarchy = service.buildHierarchy(categories);
+      const hierarchy = service.buildHierarchy(mockOrphanedCategories);
 
       expect(hierarchy).toHaveLength(1);
       expect(hierarchy[0].name).toBe('Technology');
@@ -150,47 +90,7 @@ describe('LearnPostBuilderService', () => {
 
   describe('buildImages', () => {
     it('should build images from attachment', () => {
-      const attachment: AttachmentPost = {
-        id: BigInt(123),
-        guid: 'https://example.com/image.jpg',
-        postTitle: 'Test Image',
-        postExcerpt: 'Test image excerpt',
-        metas: [
-          {
-            metaId: BigInt(1),
-            postId: BigInt(123),
-            metaKey: META_KEYS.IMAGE_ALT,
-            metaValue: 'Alt text for image',
-          },
-          {
-            metaId: BigInt(2),
-            postId: BigInt(123),
-            metaKey: META_KEYS.IMAGE_CAPTION,
-            metaValue: 'Caption for image',
-          },
-        ],
-        postAuthor: BigInt(1),
-        postDate: new Date(),
-        postDateGmt: new Date(),
-        postContent: '',
-        postContentFiltered: '',
-        postStatus: '',
-        postName: '',
-        postModified: new Date(),
-        postModifiedGmt: new Date(),
-        postParent: BigInt(0),
-        menuOrder: 0,
-        postType: '',
-        postMimeType: '',
-        commentCount: BigInt(0),
-        commentStatus: '',
-        pingStatus: '',
-        postPassword: '',
-        toPing: '',
-        pinged: '',
-      };
-
-      const images = service.buildImages(attachment);
+      const images = service.buildImages(mockAttachmentWithMetas);
 
       expect(images).toHaveLength(1);
       expect(images[0]).toEqual({
@@ -211,34 +111,7 @@ describe('LearnPostBuilderService', () => {
     });
 
     it('should handle attachment without meta data', () => {
-      const attachment: AttachmentPost = {
-        id: BigInt(123),
-        guid: 'https://example.com/image.jpg',
-        postTitle: 'Test Image',
-        postExcerpt: 'Test image excerpt',
-        metas: [],
-        postAuthor: BigInt(1),
-        postDate: new Date(),
-        postDateGmt: new Date(),
-        postContent: '',
-        postContentFiltered: '',
-        postStatus: '',
-        postName: '',
-        postModified: new Date(),
-        postModifiedGmt: new Date(),
-        postParent: BigInt(0),
-        menuOrder: 0,
-        postType: '',
-        postMimeType: '',
-        commentCount: BigInt(0),
-        commentStatus: '',
-        pingStatus: '',
-        postPassword: '',
-        toPing: '',
-        pinged: '',
-      };
-
-      const images = service.buildImages(attachment);
+      const images = service.buildImages(mockAttachmentWithoutMetas);
 
       expect(images).toHaveLength(1);
       expect(images[0].image_meta).toEqual({
@@ -255,67 +128,7 @@ describe('LearnPostBuilderService', () => {
 
   describe('buildCategories', () => {
     it('should build categories from term relationships', () => {
-      const termRelationships: TermRelationship[] = [
-        {
-          objectId: BigInt(1),
-          termTaxonomyId: BigInt(1),
-          termOrder: 0,
-          termTaxonomy: {
-            termTaxonomyId: BigInt(1),
-            termId: BigInt(1),
-            taxonomy: TAXONOMIES.CATEGORY,
-            description: '',
-            parent: BigInt(0),
-            count: BigInt(1),
-            term: {
-              termId: BigInt(1),
-              name: 'Technology',
-              slug: 'technology',
-              termGroup: BigInt(0),
-            },
-          },
-        },
-        {
-          objectId: BigInt(1),
-          termTaxonomyId: BigInt(2),
-          termOrder: 0,
-          termTaxonomy: {
-            termTaxonomyId: BigInt(2),
-            termId: BigInt(2),
-            taxonomy: TAXONOMIES.CATEGORY,
-            description: '',
-            parent: BigInt(0),
-            count: BigInt(1),
-            term: {
-              termId: BigInt(2),
-              name: 'Programming',
-              slug: 'programming',
-              termGroup: BigInt(0),
-            },
-          },
-        },
-        {
-          objectId: BigInt(1),
-          termTaxonomyId: BigInt(3),
-          termOrder: 0,
-          termTaxonomy: {
-            termTaxonomyId: BigInt(3),
-            termId: BigInt(3),
-            taxonomy: 'post_tag',
-            description: '',
-            parent: BigInt(0),
-            count: BigInt(1),
-            term: {
-              termId: BigInt(3),
-              name: 'JavaScript',
-              slug: 'javascript',
-              termGroup: BigInt(0),
-            },
-          },
-        },
-      ];
-
-      const categories = service.buildCategories(termRelationships);
+      const categories = service.buildCategories(mockCategoryTermRelationships);
 
       expect(categories).toHaveLength(2);
       expect(categories[0]).toEqual({
@@ -331,29 +144,7 @@ describe('LearnPostBuilderService', () => {
     });
 
     it('should return empty array when no category relationships exist', () => {
-      const termRelationships: TermRelationship[] = [
-        {
-          objectId: BigInt(1),
-          termTaxonomyId: BigInt(1),
-          termOrder: 0,
-          termTaxonomy: {
-            termTaxonomyId: BigInt(1),
-            termId: BigInt(1),
-            taxonomy: 'post_tag',
-            description: '',
-            parent: BigInt(0),
-            count: BigInt(1),
-            term: {
-              termId: BigInt(1),
-              name: 'JavaScript',
-              slug: 'javascript',
-              termGroup: BigInt(0),
-            },
-          },
-        },
-      ];
-
-      const categories = service.buildCategories(termRelationships);
+      const categories = service.buildCategories(mockTagOnlyTermRelationships);
       expect(categories).toEqual([]);
     });
 
@@ -385,25 +176,7 @@ describe('LearnPostBuilderService', () => {
 
   describe('buildSponsor', () => {
     it('should build sponsor from learn meta', () => {
-      const learnMeta: LearnMeta = {
-        id: 1,
-        url: null,
-        thumbnailId: null,
-        authorId: null,
-        authorName: null,
-        images: null,
-        isSponsored: true,
-        sponsorName: 'Test Sponsor',
-        sponsorUrl: 'https://sponsor.com/image.jpg',
-        sponsorImage: null,
-        sponsorImageSidebarUrl: 'https://sponsor.com/sidebar.jpg',
-        sponsorImageSidebar: null,
-        sponsorImageContentUrl: 'https://sponsor.com/content.jpg',
-        sponsorImageContent: null,
-        sponsorExtraData: 'Extra sponsor data',
-      };
-
-      const sponsor = service.buildSponsor(learnMeta);
+      const sponsor = service.buildSponsor(mockSponsoredLearnMeta);
 
       expect(sponsor).toEqual({
         name: 'Test Sponsor',
@@ -418,25 +191,7 @@ describe('LearnPostBuilderService', () => {
     });
 
     it('should handle partial sponsor data', () => {
-      const learnMeta: LearnMeta = {
-        id: 1,
-        url: null,
-        thumbnailId: null,
-        authorId: null,
-        authorName: null,
-        images: null,
-        isSponsored: true,
-        sponsorName: 'Test Sponsor',
-        sponsorUrl: null,
-        sponsorImage: null,
-        sponsorImageSidebarUrl: null,
-        sponsorImageSidebar: null,
-        sponsorImageContentUrl: null,
-        sponsorImageContent: null,
-        sponsorExtraData: null,
-      };
-
-      const sponsor = service.buildSponsor(learnMeta);
+      const sponsor = service.buildSponsor(mockPartialSponsorLearnMeta);
 
       expect(sponsor).toEqual({
         name: 'Test Sponsor',
@@ -468,22 +223,7 @@ describe('LearnPostBuilderService', () => {
 
   describe('buildLocationGeopoint', () => {
     it('should build geopoint from meta data', () => {
-      const metas: PostMeta[] = [
-        {
-          metaId: BigInt(1),
-          postId: BigInt(1),
-          metaKey: META_KEYS.LATITUDE,
-          metaValue: '14.6349',
-        },
-        {
-          metaId: BigInt(2),
-          postId: BigInt(1),
-          metaKey: META_KEYS.LONGITUDE,
-          metaValue: '-90.5069',
-        },
-      ];
-
-      const geopoint = service.buildLocationGeopoint(metas);
+      const geopoint = service.buildLocationGeopoint(mockLocationMetas);
 
       expect(geopoint).toEqual({
         latitude: '14.6349',
@@ -527,98 +267,18 @@ describe('LearnPostBuilderService', () => {
     });
 
     it('should return null when coordinates have empty values', () => {
-      const metas: PostMeta[] = [
-        {
-          metaId: BigInt(1),
-          postId: BigInt(1),
-          metaKey: META_KEYS.LATITUDE,
-          metaValue: '',
-        },
-        {
-          metaId: BigInt(2),
-          postId: BigInt(1),
-          metaKey: META_KEYS.LONGITUDE,
-          metaValue: '',
-        },
-      ];
-
-      const geopoint = service.buildLocationGeopoint(metas);
+      const geopoint = service.buildLocationGeopoint(mockEmptyLocationMetas);
       expect(geopoint).toBeNull();
     });
   });
 
   describe('buildSeo', () => {
     it('should build complete SEO data from meta', () => {
-      const metas: PostMeta[] = [
-        {
-          metaId: BigInt(1),
-          postId: BigInt(1),
-          metaKey: META_KEYS.RANKMATH_TITLE,
-          metaValue: 'SEO Title',
-        },
-        {
-          metaId: BigInt(2),
-          postId: BigInt(1),
-          metaKey: META_KEYS.RANKMATH_DESCRIPTION,
-          metaValue: 'SEO Description',
-        },
-        {
-          metaId: BigInt(3),
-          postId: BigInt(1),
-          metaKey: META_KEYS.RANKMATH_CANONICAL_URL,
-          metaValue: 'https://example.com/canonical',
-        },
-        {
-          metaId: BigInt(4),
-          postId: BigInt(1),
-          metaKey: META_KEYS.RANKMATH_FOCUS_KEYWORD,
-          metaValue: 'test keyword',
-        },
-        {
-          metaId: BigInt(5),
-          postId: BigInt(1),
-          metaKey: META_KEYS.RANKMATH_SEO_SCORE,
-          metaValue: '85',
-        },
-        {
-          metaId: BigInt(6),
-          postId: BigInt(1),
-          metaKey: META_KEYS.RANKMATH_FB_TITLE,
-          metaValue: 'OG Title',
-        },
-        {
-          metaId: BigInt(7),
-          postId: BigInt(1),
-          metaKey: META_KEYS.RANKMATH_FB_DESCRIPTION,
-          metaValue: 'OG Description',
-        },
-        {
-          metaId: BigInt(8),
-          postId: BigInt(1),
-          metaKey: META_KEYS.RANKMATH_FB_IMAGE,
-          metaValue: 'https://example.com/og-image.jpg',
-        },
-        {
-          metaId: BigInt(9),
-          postId: BigInt(1),
-          metaKey: META_KEYS.RANKMATH_TWITTER_TITLE,
-          metaValue: 'Twitter Title',
-        },
-        {
-          metaId: BigInt(10),
-          postId: BigInt(1),
-          metaKey: META_KEYS.RANKMATH_TWITTER_DESCRIPTION,
-          metaValue: 'Twitter Description',
-        },
-        {
-          metaId: BigInt(11),
-          postId: BigInt(1),
-          metaKey: META_KEYS.RANKMATH_TWITTER_IMAGE,
-          metaValue: 'https://example.com/twitter-image.jpg',
-        },
-      ];
-
-      const seo = service.buildSeo(metas, 'Post Title', 'Post Excerpt');
+      const seo = service.buildSeo(
+        mockCompleteSeoMetas,
+        'Post Title',
+        'Post Excerpt',
+      );
 
       expect(seo).toEqual({
         title: 'SEO Title',
@@ -656,28 +316,11 @@ describe('LearnPostBuilderService', () => {
     });
 
     it('should handle partial SEO data with fallbacks', () => {
-      const metas: PostMeta[] = [
-        {
-          metaId: BigInt(1),
-          postId: BigInt(1),
-          metaKey: META_KEYS.RANKMATH_TITLE,
-          metaValue: 'Custom SEO Title',
-        },
-        {
-          metaId: BigInt(2),
-          postId: BigInt(1),
-          metaKey: META_KEYS.RANKMATH_FB_TITLE,
-          metaValue: 'Custom OG Title',
-        },
-        {
-          metaId: BigInt(3),
-          postId: BigInt(1),
-          metaKey: META_KEYS.RANKMATH_SEO_SCORE,
-          metaValue: '75',
-        },
-      ];
-
-      const seo = service.buildSeo(metas, 'Post Title', 'Post Excerpt');
+      const seo = service.buildSeo(
+        mockPartialSeoMetas,
+        'Post Title',
+        'Post Excerpt',
+      );
 
       expect(seo).toEqual({
         title: 'Custom SEO Title',
@@ -695,16 +338,11 @@ describe('LearnPostBuilderService', () => {
     });
 
     it('should handle invalid SEO score', () => {
-      const metas: PostMeta[] = [
-        {
-          metaId: BigInt(1),
-          postId: BigInt(1),
-          metaKey: META_KEYS.RANKMATH_SEO_SCORE,
-          metaValue: 'invalid',
-        },
-      ];
-
-      const seo = service.buildSeo(metas, 'Post Title', 'Post Excerpt');
+      const seo = service.buildSeo(
+        mockInvalidSeoMetas,
+        'Post Title',
+        'Post Excerpt',
+      );
 
       expect(seo.seo_score).toBe(0);
     });

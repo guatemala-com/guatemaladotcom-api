@@ -23,42 +23,42 @@ export class LearnPostBuilderService {
    */
   buildHierarchy(categories: LearnCategory[]): LearnCategory[] {
     const categoryMap = new Map<number, LearnCategory>();
-    const rootCategories: LearnCategory[] = [];
 
-    // First pass: create map of all categories
+    // Create a map with mutable categories (copies)
     categories.forEach((category) => {
-      categoryMap.set(category.id, category);
+      categoryMap.set(
+        category.id,
+        new LearnCategory(
+          category.id,
+          category.name,
+          category.slug,
+          category.description,
+          category.parent,
+          category.count,
+          [], // Start with empty children array
+        ),
+      );
     });
 
-    // Second pass: build hierarchy
+    // Build the hierarchy
+    const rootCategories: LearnCategory[] = [];
+
     categories.forEach((category) => {
+      const categoryInMap = categoryMap.get(category.id)!;
+
       if (category.parent === 0) {
-        // Root category
-        rootCategories.push(category);
+        // This is a root category
+        rootCategories.push(categoryInMap);
       } else {
-        // Child category - find parent and add to its children
-        const parent = categoryMap.get(category.parent);
-        if (parent) {
-          // Create a new category with updated children
-          const updatedChildren = [...parent.children, category];
-          const updatedParent = new LearnCategory(
-            parent.id,
-            parent.name,
-            parent.slug,
-            parent.description,
-            parent.parent,
-            parent.count,
-            updatedChildren,
-          );
-          categoryMap.set(parent.id, updatedParent);
+        // This is a child category - add it to its parent
+        const parentCategory = categoryMap.get(category.parent);
+        if (parentCategory) {
+          parentCategory.children.push(categoryInMap);
         }
       }
     });
 
-    // Return root categories (with their children populated)
-    return rootCategories
-      .map((category) => categoryMap.get(category.id))
-      .filter(Boolean) as LearnCategory[];
+    return rootCategories;
   }
 
   buildImages(attachment: AttachmentPost | null): LearnPostImage[] {
@@ -178,7 +178,8 @@ export class LearnPostBuilderService {
     const seoScoreMeta = metas.find(
       (meta) => meta.metaKey === META_KEYS.RANKMATH_SEO_SCORE,
     );
-    const seoScore = parseInt(seoScoreMeta?.metaValue ?? '0', 10);
+    const parsedSeoScore = parseInt(seoScoreMeta?.metaValue ?? '0', 10);
+    const seoScore = isNaN(parsedSeoScore) ? 0 : parsedSeoScore;
 
     // Open Graph fields
     const ogTitleMeta = metas.find(
