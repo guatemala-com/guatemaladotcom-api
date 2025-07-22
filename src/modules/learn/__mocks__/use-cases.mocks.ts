@@ -19,12 +19,8 @@ export const mockCategories: CategoryResponseDto[] = [
         parent: 1,
         count: 8,
         children: [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
       },
     ],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
   },
 ];
 
