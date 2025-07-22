@@ -100,44 +100,48 @@ export class LearnRepositoryImpl implements LearnRepository {
    */
   private buildHierarchy(categories: LearnCategory[]): LearnCategory[] {
     const categoryMap = new Map<number, LearnCategory>();
-    const rootCategories: LearnCategory[] = [];
+    const rootCategoryIds: number[] = [];
+    const childrenMap = new Map<number, number[]>(); // parent_id -> [child_ids]
 
-    // First pass: create map of all categories
+    // First pass: create map of all categories and build parent-child relationships
     categories.forEach((category) => {
       categoryMap.set(category.id, category);
-    });
-
-    // Second pass: build hierarchy
-    categories.forEach((category) => {
+      
       if (category.parent === 0) {
-        // Root category
-        rootCategories.push(category);
+        rootCategoryIds.push(category.id);
       } else {
-        // Child category - find parent and add to its children
-        const parent = categoryMap.get(category.parent);
-        if (parent) {
-          // Create a new category with updated children
-          const updatedChildren = [...parent.children, category];
-          const updatedParent = new LearnCategory(
-            parent.id,
-            parent.name,
-            parent.slug,
-            parent.description,
-            parent.parent,
-            parent.count,
-            updatedChildren,
-            parent.createdAt,
-            parent.updatedAt,
-          );
-          categoryMap.set(parent.id, updatedParent);
+        // Track parent-child relationships
+        if (!childrenMap.has(category.parent)) {
+          childrenMap.set(category.parent, []);
         }
+        childrenMap.get(category.parent)!.push(category.id);
       }
     });
 
-    // Return root categories (with their children populated)
-    return rootCategories
-      .map((category) => categoryMap.get(category.id))
-      .filter(Boolean) as LearnCategory[];
+    // Recursive function to build category with all its children
+    const buildCategoryWithChildren = (categoryId: number): LearnCategory => {
+      const category = categoryMap.get(categoryId)!;
+      const childIds = childrenMap.get(categoryId) || [];
+      
+      // Recursively build children
+      const children = childIds.map(childId => buildCategoryWithChildren(childId));
+      
+      // Return category with populated children
+      return new LearnCategory(
+        category.id,
+        category.name,
+        category.slug,
+        category.description,
+        category.parent,
+        category.count,
+        children,
+        category.createdAt,
+        category.updatedAt,
+      );
+    };
+
+    // Build root categories with all their nested children
+    return rootCategoryIds.map(rootId => buildCategoryWithChildren(rootId));
   }
 
   async getLearnPostById(id: number): Promise<LearnPost | null> {

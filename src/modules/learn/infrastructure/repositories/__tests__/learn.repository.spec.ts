@@ -75,6 +75,88 @@ describe('LearnRepositoryImpl', () => {
       expect(categories[0].children.length).toBe(1);
       expect(categories[0].children[0].name).toBe('Programming');
     });
+
+    it('should correctly build multi-level hierarchy with all children', async () => {
+      // Setup more complex hierarchy: Root -> Child -> Grandchild
+      (prismaService.aprTermTaxonomy.findMany as jest.Mock).mockResolvedValue([
+        {
+          termTaxonomyId: BigInt(1),
+          termId: BigInt(1),
+          taxonomy: 'category',
+          description: 'Technology articles',
+          parent: BigInt(0),
+          count: BigInt(20),
+          term: {
+            termId: BigInt(1),
+            name: 'Technology',
+            slug: 'technology',
+            termGroup: BigInt(0),
+          },
+        },
+        {
+          termTaxonomyId: BigInt(2),
+          termId: BigInt(2),
+          taxonomy: 'category',
+          description: 'Programming tutorials',
+          parent: BigInt(1),
+          count: BigInt(10),
+          term: {
+            termId: BigInt(2),
+            name: 'Programming',
+            slug: 'programming',
+            termGroup: BigInt(0),
+          },
+        },
+        {
+          termTaxonomyId: BigInt(3),
+          termId: BigInt(3),
+          taxonomy: 'category',
+          description: 'JavaScript tutorials',
+          parent: BigInt(2),
+          count: BigInt(5),
+          term: {
+            termId: BigInt(3),
+            name: 'JavaScript',
+            slug: 'javascript',
+            termGroup: BigInt(0),
+          },
+        },
+        {
+          termTaxonomyId: BigInt(4),
+          termId: BigInt(4),
+          taxonomy: 'category',
+          description: 'Design articles',
+          parent: BigInt(1),
+          count: BigInt(8),
+          term: {
+            termId: BigInt(4),
+            name: 'Design',
+            slug: 'design',
+            termGroup: BigInt(0),
+          },
+        },
+      ]);
+
+      const categories = await repository.getCategories();
+      
+      // Should have 1 root category
+      expect(categories.length).toBe(1);
+      
+      const techCategory = categories[0];
+      expect(techCategory.name).toBe('Technology');
+      expect(techCategory.children.length).toBe(2); // Programming and Design
+      
+      // Find Programming category
+      const programmingCategory = techCategory.children.find(child => child.name === 'Programming');
+      expect(programmingCategory).toBeDefined();
+      expect(programmingCategory!.children.length).toBe(1); // JavaScript
+      expect(programmingCategory!.children[0].name).toBe('JavaScript');
+      
+      // Find Design category
+      const designCategory = techCategory.children.find(child => child.name === 'Design');
+      expect(designCategory).toBeDefined();
+      expect(designCategory!.children.length).toBe(0); // No children
+    });
   });
 
   describe('getCategoryById', () => {
