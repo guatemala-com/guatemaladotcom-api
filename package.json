@@ -74,7 +74,8 @@
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.35.1",
-    "serverless-jetpack": "^0.11.2"
+    "serverless-jetpack": "^0.11.2",
+    "serverless-offline": "^12.0.0"
   },
   "jest": {
     "moduleFileExtensions": [
