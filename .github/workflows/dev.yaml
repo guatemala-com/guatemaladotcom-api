@@ -65,11 +65,8 @@ jobs:
       - name: Build project
         run: pnpm build
 
-      - name: Install serverless-jetpack plugin
-        run: sls plugin install -n serverless-jetpack
-
       - name: Deploy lambda function
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        run: sls deploy --stage dev --region us-east-1
+        run: sls deploy
