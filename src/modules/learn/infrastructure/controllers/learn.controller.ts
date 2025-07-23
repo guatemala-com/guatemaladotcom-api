@@ -1,4 +1,4 @@
-import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
+import { Controller, Get, Param, ParseIntPipe, Query, NotFoundException, Req } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -9,11 +9,13 @@ import {
   ApiNotFoundResponse,
   ApiBadRequestResponse,
 } from '@nestjs/swagger';
+import { Request } from 'express';
 import { OAuthAuthRead } from '../../../auth/infrastructure/decorators/oauth-scopes.decorator';
 import { GetCategoriesUseCase } from '../../application/use-cases/get-categories.use-case';
 import { GetCategoryByIdUseCase } from '../../application/use-cases/get-category-by-id.use-case';
 import { GetCategoryBySlugUseCase } from '../../application/use-cases/get-category-by-slug.use-case';
 import { GetLearnPostByIdUseCase } from '../../application/use-cases/get-learn-post-by-id.use-case';
+import { GetLearnPostBySlugUseCase } from '../../application/use-cases/get-learn-post-by-slug.use-case';
 import { GetArticlesByCategoryUseCase } from '../../application/use-cases/get-articles-by-category.use-case';
 import { CategoryResponseDto } from '../../application/dtos/category.dto';
 import { LearnPostResponseDto } from '../../application/dtos/learn-post.dto';
@@ -29,6 +31,7 @@ export class LearnController {
     private readonly getCategoryByIdUseCase: GetCategoryByIdUseCase,
     private readonly getCategoryBySlugUseCase: GetCategoryBySlugUseCase,
     private readonly getLearnPostByIdUseCase: GetLearnPostByIdUseCase,
+    private readonly getLearnPostBySlugUseCase: GetLearnPostBySlugUseCase,
     private readonly getArticlesByCategoryUseCase: GetArticlesByCategoryUseCase,
   ) {}
 
@@ -49,10 +52,75 @@ export class LearnController {
   }
 
   @Get('article/:id')
+  @ApiOperation({
+    summary: 'Get article by ID (deprecated)',
+    description: 'Retrieve a published article by its numeric ID. Use slug-based endpoint instead.',
+    deprecated: true,
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Article numeric ID',
+    example: 1234,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Successfully retrieved article',
+    type: LearnPostResponseDto,
+  })
+  @ApiNotFoundResponse({
+    description: 'Article not found',
+  })
   async getLearnPostById(
     @Param('id', ParseIntPipe) id: number,
   ): Promise<LearnPostResponseDto> {
     return this.getLearnPostByIdUseCase.execute(id);
+  }
+
+  @Get('article/*')
+  @ApiOperation({
+    summary: 'Get article by category path and slug',
+    description: 'Retrieve a published article by its full category path and slug (e.g., cultura-guatemalteca/patrimonios/article-slug)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Successfully retrieved article',
+    type: LearnPostResponseDto,
+  })
+  @ApiNotFoundResponse({
+    description: 'Article not found',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 404 },
+        message: {
+          type: 'string',
+          example: "Article not found in category path",
+        },
+        error: { type: 'string', example: 'Not Found' },
+      },
+    },
+  })
+  async getLearnPostByPath(
+    @Req() request: Request,
+  ): Promise<LearnPostResponseDto> {
+    // Extract the full path after 'article/'
+    const fullPath = request.url.split('/learn/article/')[1];
+    
+    if (!fullPath) {
+      throw new NotFoundException('Invalid article path format');
+    }
+
+    const pathParts = fullPath.split('/');
+    
+    if (pathParts.length < 2) {
+      throw new NotFoundException('Invalid article path format - need category/article');
+    }
+
+    // Last part is the article slug, everything before is the category path
+    const articleSlug = pathParts[pathParts.length - 1];
+    const categoryPath = pathParts.slice(0, -1).join('/');
+
+    return this.getLearnPostBySlugUseCase.execute(categoryPath, articleSlug);
   }
 
   @Get('categories/:slug/articles')

@@ -16,6 +16,10 @@ export interface LearnRepository {
   getCategoryById(id: number): Promise<LearnCategory | null>;
   getCategoryBySlug(slug: string): Promise<LearnCategory | null>;
   getLearnPostById(id: number): Promise<LearnPost | null>;
+  getLearnPostBySlug(
+    categorySlug: string,
+    articleSlug: string,
+  ): Promise<LearnPost | null>;
   getArticlesByCategory(
     categorySlug: string,
     options: PaginationOptions,

@@ -25,6 +25,94 @@ export class LearnRepositoryImpl implements LearnRepository {
     private readonly configService: ConfigService,
   ) {}
 
+  /**
+   * Build category path for a post based on its categories
+   * Returns the deepest (most specific) category path
+   */
+  private async buildCategoryPath(termRelationships: any[]): Promise<string> {
+    if (termRelationships.length === 0) {
+      return '';
+    }
+
+    // Get all categories for this post
+    const categoryRelationships = termRelationships.filter(
+      (rel: any) => rel?.termTaxonomy?.taxonomy === TAXONOMIES.CATEGORY
+    );
+
+    if (categoryRelationships.length === 0) {
+      return '';
+    }
+
+    // Find the deepest category (the one with the highest level in hierarchy)
+    let deepestCategory = null;
+    let maxDepth = -1;
+
+    for (const rel of categoryRelationships) {
+      const categoryId = Number((rel as any).termTaxonomy.term.termId);
+      const depth = await this.getCategoryDepth(categoryId);
+      
+      if (depth > maxDepth) {
+        maxDepth = depth;
+        deepestCategory = (rel as any).termTaxonomy;
+      }
+    }
+
+    if (!deepestCategory) {
+      return '';
+    }
+
+    // Build the full path from root to this category
+    return await this.buildCategoryPathRecursive(Number((deepestCategory as any).term.termId));
+  }
+
+  /**
+   * Get the depth level of a category in the hierarchy
+   */
+  private async getCategoryDepth(categoryId: number): Promise<number> {
+    const category = await this.prisma.aprTermTaxonomy.findFirst({
+      where: {
+        term: { termId: BigInt(categoryId) },
+        taxonomy: TAXONOMIES.CATEGORY,
+      },
+      include: { term: true },
+    });
+
+    if (!category || category.parent === BigInt(0)) {
+      return 0;
+    }
+
+    const parentDepth = await this.getCategoryDepth(Number(category.parent));
+    return parentDepth + 1;
+  }
+
+  /**
+   * Build category path recursively from category ID to root
+   */
+  private async buildCategoryPathRecursive(categoryId: number): Promise<string> {
+    const category = await this.prisma.aprTermTaxonomy.findFirst({
+      where: {
+        term: { termId: BigInt(categoryId) },
+        taxonomy: TAXONOMIES.CATEGORY,
+      },
+      include: { term: true },
+    });
+
+    if (!category) {
+      return '';
+    }
+
+    const slug = category.term.slug;
+
+    if (category.parent === BigInt(0)) {
+      // Root category
+      return slug;
+    }
+
+    // Get parent path and append current slug
+    const parentPath = await this.buildCategoryPathRecursive(Number(category.parent));
+    return parentPath ? `${parentPath}/${slug}` : slug;
+  }
+
   async getCategories(): Promise<LearnCategory[]> {
     // Get all categories from WordPress database
     const categories: CategoryWithTerm[] =
@@ -277,9 +365,131 @@ export class LearnRepositoryImpl implements LearnRepository {
       post.postExcerpt,
     );
 
+    // Build the full category path for the URL
+    const categoryPath = await this.buildCategoryPath(post.termRelationships);
+    const fullUrl = categoryPath 
+      ? `${this.configService.get('APP_URL')}/${categoryPath}/${post.postName}`
+      : `${this.configService.get('APP_URL')}/${post.postName}`;
+
     return LearnPost.fromDatabase({
       id: Number(post.id),
-      url: `${this.configService.get('APP_URL')}/${post.postName}`,
+      url: fullUrl,
+      title: post.postTitle,
+      excerpt: post.postExcerpt,
+      date: post.postDate.toISOString(),
+      images,
+      locationGeopoint,
+      content: post.postContent,
+      categories,
+      author,
+      keywords: [],
+      isSponsored: learnMeta?.isSponsored ? 1 : 0,
+      sponsor,
+      seo,
+    });
+  }
+
+  async getLearnPostBySlug(
+    categoryPath: string,
+    articleSlug: string,
+  ): Promise<LearnPost | null> {
+    // Parse category path (e.g., "cultura-guatemalteca/patrimonios" -> ["cultura-guatemalteca", "patrimonios"])
+    const categoryParts = categoryPath.split('/');
+    const targetCategorySlug = categoryParts[categoryParts.length - 1]; // Get the last (deepest) category
+
+    // Find the target category by slug
+    const category = await this.prisma.aprTermTaxonomy.findFirst({
+      where: {
+        term: {
+          slug: targetCategorySlug,
+        },
+        taxonomy: TAXONOMIES.CATEGORY,
+      },
+      include: {
+        term: true,
+      },
+    });
+
+    if (!category) {
+      return null;
+    }
+
+    // Verify the full category path matches
+    const actualCategoryPath = await this.buildCategoryPathRecursive(Number(category.term.termId));
+    if (actualCategoryPath !== categoryPath) {
+      return null; // Category path doesn't match
+    }
+
+    // Find the post by slug that belongs to this category
+    const post = await this.prisma.aprPosts.findFirst({
+      where: {
+        postName: articleSlug,
+        postType: 'post',
+        postStatus: POST_STATUS.PUBLISH,
+        termRelationships: {
+          some: {
+            termTaxonomyId: category.termTaxonomyId,
+          },
+        },
+      },
+      include: {
+        metas: true,
+        termRelationships: {
+          include: {
+            termTaxonomy: {
+              include: {
+                term: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!post) {
+      return null;
+    }
+
+    const learnMeta = await this.prisma.aprLearnMeta.findUnique({
+      where: { id: Number(post.id) },
+    });
+
+    // Get attachment data in a single query if thumbnail exists
+    const thumbnailMeta = post.metas.find(
+      (meta) => meta.metaKey === META_KEYS.THUMBNAIL_ID,
+    );
+
+    let attachment: AttachmentPost | null = null;
+    if (thumbnailMeta?.metaValue) {
+      const attachmentId = parseInt(thumbnailMeta.metaValue, 10);
+      attachment = await this.prisma.aprPosts.findUnique({
+        where: { id: BigInt(attachmentId) },
+        include: { metas: true },
+      });
+    }
+
+    // Build the learn post from WordPress data
+    const images = this.learnPostBuilder.buildImages(attachment);
+    const categories = this.learnPostBuilder.buildCategories(
+      post.termRelationships,
+    );
+    const author = this.learnPostBuilder.buildAuthor(post.postAuthor, learnMeta);
+    const sponsor = this.learnPostBuilder.buildSponsor(learnMeta);
+    const locationGeopoint = this.learnPostBuilder.buildLocationGeopoint(
+      post.metas,
+    );
+    const seo = this.learnPostBuilder.buildSeo(
+      post.metas,
+      post.postTitle,
+      post.postExcerpt,
+    );
+
+    // Use the provided category path for the URL
+    const fullUrl = `${this.configService.get('APP_URL')}/${categoryPath}/${post.postName}`;
+
+    return LearnPost.fromDatabase({
+      id: Number(post.id),
+      url: fullUrl,
       title: post.postTitle,
       excerpt: post.postExcerpt,
       date: post.postDate.toISOString(),
@@ -403,9 +613,15 @@ export class LearnRepositoryImpl implements LearnRepository {
           post.postExcerpt,
         );
 
+        // Build the full category path for the URL
+        const categoryPath = await this.buildCategoryPath(post.termRelationships);
+        const fullUrl = categoryPath 
+          ? `${this.configService.get('APP_URL')}/${categoryPath}/${post.postName}`
+          : `${this.configService.get('APP_URL')}/${post.postName}`;
+
         return LearnPost.fromDatabase({
           id: Number(post.id),
-          url: `${this.configService.get('APP_URL')}/${post.postName}`,
+          url: fullUrl,
           title: post.postTitle,
           excerpt: post.postExcerpt,
           date: post.postDate.toISOString(),
