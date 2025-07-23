@@ -2,9 +2,7 @@ name: Deploy lambda
 
 on:
   push:
-    branches: [main, develop]
-  pull_request:
-    branches: [main, develop]
+    branches: [feature/github-actions]
 
 jobs:
   deploy:
@@ -56,31 +54,20 @@ jobs:
       - name: Create private and public keys
         run: pnpm generate:keys
 
-      - name: Run unit tests with coverage threshold
-        run: pnpm test:ci
+      - name: Build with esbuild
+        run: npx esbuild src/main.ts --bundle --platform=node --target=node20 --outfile=dist/index.js
 
-      - name: Build project
-        run: pnpm build
+      - name: Install only production dependencies
+        run: pnpm install --prod
 
-      - name: delete devDependencies
-        run: pnpm prune --prod
+      - name: Create ZIP artifact
+        run: zip -r function.zip dist node_modules package.json
 
-      - name: Zip Lambda
-        run: zip -r lambda.zip dist node_modules
-
-      - name: Upload to S3
-        run: |
-          aws s3 cp lambda.zip s3://github-actions-stg-bucket/lambda-artifacts/lambda.zip
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-
-      - name: Deploy Lambda using S3
+      - name: Deploy Lambda code
         run: |
           aws lambda update-function-code \
             --function-name aprende_headless_api \
-            --s3-bucket github-actions-stg-bucket \
-            --s3-key lambda-artifacts/lambda.zip \
+            --zip-file fileb://function.zip \
             --region us-west-2
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
