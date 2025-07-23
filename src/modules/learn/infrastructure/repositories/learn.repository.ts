@@ -76,7 +76,9 @@ export class LearnRepositoryImpl implements LearnRepository {
     }
 
     // Get children for this specific category
-    const children = await this.getCategoryChildren(Number(category.term.termId));
+    const children = await this.getCategoryChildren(
+      Number(category.term.termId),
+    );
 
     return LearnCategory.fromDatabase({
       id: Number(category.term.termId),
@@ -108,7 +110,9 @@ export class LearnRepositoryImpl implements LearnRepository {
     }
 
     // Get children for this specific category
-    const children = await this.getCategoryChildren(Number(category.term.termId));
+    const children = await this.getCategoryChildren(
+      Number(category.term.termId),
+    );
 
     return LearnCategory.fromDatabase({
       id: Number(category.term.termId),
@@ -124,7 +128,9 @@ export class LearnRepositoryImpl implements LearnRepository {
   /**
    * Get all children categories for a specific parent category ID
    */
-  private async getCategoryChildren(parentId: number): Promise<LearnCategory[]> {
+  private async getCategoryChildren(
+    parentId: number,
+  ): Promise<LearnCategory[]> {
     // Get direct children
     const directChildren: CategoryWithTerm[] =
       await this.prisma.aprTermTaxonomy.findMany({
@@ -147,16 +153,18 @@ export class LearnRepositoryImpl implements LearnRepository {
     for (const child of directChildren) {
       const childId = Number(child.term.termId);
       const grandChildren = await this.getCategoryChildren(childId);
-      
-      children.push(LearnCategory.fromDatabase({
-        id: childId,
-        name: child.term.name,
-        slug: child.term.slug,
-        description: child.description,
-        parent: Number(child.parent),
-        count: Number(child.count),
-        children: grandChildren,
-      }));
+
+      children.push(
+        LearnCategory.fromDatabase({
+          id: childId,
+          name: child.term.name,
+          slug: child.term.slug,
+          description: child.description,
+          parent: Number(child.parent),
+          count: Number(child.count),
+          children: grandChildren,
+        }),
+      );
     }
 
     return children;

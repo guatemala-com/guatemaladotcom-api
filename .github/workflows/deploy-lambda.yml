@@ -1,0 +1,47 @@
+name: Deploy to AWS Lambda
+
+on:
+  push:
+    branches: [develop]
+  pull_request:
+    branches: [develop]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build project
+        run: pnpm build
+
+      - name: Prepare Lambda package
+        run: |
+          mkdir lambda_package
+          cp -r dist/* lambda_package/
+          cp package.json pnpm-lock.yaml lambda_package/
+          cd lambda_package
+          pnpm install --prod --frozen-lockfile
+          zip -r ../lambda.zip .
+
+      - name: Deploy to AWS Lambda
+        uses: appleboy/lambda-action@v0.1.9
+        with:
+          aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws_region: us-west-2
+          function_name: aprende_headless_api
+          zip_file: lambda.zip
