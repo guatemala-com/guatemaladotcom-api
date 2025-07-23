@@ -189,6 +189,7 @@ describe('LearnPost', () => {
         sponsor_image_content: [],
         sponsor_extra_data: 'Extra sponsor data',
         seo: mockSeo,
+        audionote_url: 'https://audionotas.guatemala.com/aprende/1.mp3',
       });
     });
 

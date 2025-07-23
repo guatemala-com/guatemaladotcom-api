@@ -4,6 +4,7 @@ import { GetCategoriesUseCase } from '../../../application/use-cases/get-categor
 import { GetCategoryByIdUseCase } from '../../../application/use-cases/get-category-by-id.use-case';
 import { GetCategoryBySlugUseCase } from '../../../application/use-cases/get-category-by-slug.use-case';
 import { GetLearnPostByIdUseCase } from '../../../application/use-cases/get-learn-post-by-id.use-case';
+import { GetLearnPostBySlugUseCase } from '../../../application/use-cases/get-learn-post-by-slug.use-case';
 import { GetArticlesByCategoryUseCase } from '../../../application/use-cases/get-articles-by-category.use-case';
 import {
   mockCategories,
@@ -16,6 +17,7 @@ describe('LearnController', () => {
   let getCategoryByIdUseCaseExecuteMock: jest.Mock;
   let getCategoryBySlugUseCaseExecuteMock: jest.Mock;
   let getLearnPostByIdUseCaseExecuteMock: jest.Mock;
+  let getLearnPostBySlugUseCaseExecuteMock: jest.Mock;
   let getArticlesByCategoryUseCaseExecuteMock: jest.Mock;
 
   beforeEach(async () => {
@@ -33,6 +35,9 @@ describe('LearnController', () => {
         Promise.resolve(mockCategories.find((cat) => cat.slug === slug)),
       );
     getLearnPostByIdUseCaseExecuteMock = jest
+      .fn()
+      .mockResolvedValue(mockLearnPost);
+    getLearnPostBySlugUseCaseExecuteMock = jest
       .fn()
       .mockResolvedValue(mockLearnPost);
     getArticlesByCategoryUseCaseExecuteMock = jest
@@ -74,6 +79,12 @@ describe('LearnController', () => {
           provide: GetLearnPostByIdUseCase,
           useValue: {
             execute: getLearnPostByIdUseCaseExecuteMock,
+          },
+        },
+        {
+          provide: GetLearnPostBySlugUseCase,
+          useValue: {
+            execute: getLearnPostBySlugUseCaseExecuteMock,
           },
         },
         {

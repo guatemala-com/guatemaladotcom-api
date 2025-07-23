@@ -6,6 +6,28 @@ import helmet from 'helmet';
 // Mock only the necessary modules
 jest.mock('@nestjs/core');
 jest.mock('@nestjs/config');
+jest.mock('@nestjs/swagger', () => ({
+  DocumentBuilder: jest.fn().mockImplementation(() => ({
+    setTitle: jest.fn().mockReturnThis(),
+    setDescription: jest.fn().mockReturnThis(),
+    setVersion: jest.fn().mockReturnThis(),
+    addBearerAuth: jest.fn().mockReturnThis(),
+    build: jest.fn().mockReturnValue({}),
+  })),
+  SwaggerModule: {
+    createDocument: jest.fn().mockReturnValue({}),
+    setup: jest.fn(),
+  },
+  ApiProperty: jest.fn(() => (target: any, propertyKey: string) => {}),
+  ApiTags: jest.fn(() => (target: any) => {}),
+  ApiOperation: jest.fn(() => (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {}),
+  ApiParam: jest.fn(() => (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {}),
+  ApiQuery: jest.fn(() => (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {}),
+  ApiResponse: jest.fn(() => (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {}),
+  ApiBearerAuth: jest.fn(() => (target: any) => {}),
+  ApiNotFoundResponse: jest.fn(() => (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {}),
+  ApiBadRequestResponse: jest.fn(() => (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {}),
+}));
 jest.mock('helmet');
 
 describe('main.ts', () => {
@@ -16,6 +38,7 @@ describe('main.ts', () => {
     use: jest.Mock;
     enableCors: jest.Mock;
     useGlobalPipes: jest.Mock;
+    getHttpAdapter: jest.Mock;
   };
   let mockConfigService: {
     get: jest.Mock;
@@ -48,6 +71,7 @@ describe('main.ts', () => {
       use: jest.fn(),
       enableCors: jest.fn(),
       useGlobalPipes: jest.fn(),
+      getHttpAdapter: jest.fn().mockReturnValue({ getType: jest.fn() }),
     };
 
     // Mock ConfigService with safe defaults

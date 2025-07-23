@@ -61,4 +61,5 @@ export const mockLearnPost: LearnPostResponseDto = {
     twitter_description: 'This is a test Twitter description',
     twitter_image: 'https://stagingaprende.guatemala.com/twitter-image.jpg',
   },
+  audionote_url: 'https://audionotas.guatemala.com/aprende/1.mp3',
 };

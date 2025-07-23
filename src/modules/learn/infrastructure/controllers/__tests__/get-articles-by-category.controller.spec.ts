@@ -6,6 +6,7 @@ import { GetCategoriesUseCase } from '../../../application/use-cases/get-categor
 import { GetCategoryByIdUseCase } from '../../../application/use-cases/get-category-by-id.use-case';
 import { GetCategoryBySlugUseCase } from '../../../application/use-cases/get-category-by-slug.use-case';
 import { GetLearnPostByIdUseCase } from '../../../application/use-cases/get-learn-post-by-id.use-case';
+import { GetLearnPostBySlugUseCase } from '../../../application/use-cases/get-learn-post-by-slug.use-case';
 import { PaginatedArticlesResponseDto } from '../../../application/dtos/article-list.dto';
 
 describe('LearnController - getArticlesByCategory', () => {
@@ -59,6 +60,10 @@ describe('LearnController - getArticlesByCategory', () => {
         },
         {
           provide: GetLearnPostByIdUseCase,
+          useValue: { execute: jest.fn() },
+        },
+        {
+          provide: GetLearnPostBySlugUseCase,
           useValue: { execute: jest.fn() },
         },
         {
