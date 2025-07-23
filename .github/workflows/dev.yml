@@ -55,7 +55,7 @@ jobs:
         run: pnpm generate:keys
 
       - name: Build with esbuild
-        run: npx esbuild src/main.ts --bundle --platform=node --target=node20 --outfile=dist/index.js
+        run: npx esbuild src/main.ts --bundle --platform=node --target=node20 --outfile=dist/index.js --external:@nestjs/websockets
 
       - name: Install only production dependencies
         run: pnpm install --prod
