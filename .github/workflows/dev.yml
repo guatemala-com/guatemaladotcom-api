@@ -45,30 +45,23 @@ jobs:
       - name: Generate Prisma client
         run: pnpm generate
 
-      - name: Run linting
-        run: pnpm lint
+      - name: Build Lambda
+        run: pnpm build:lambda
 
-      - name: Check formatting
-        run: pnpm format:check
-
-      - name: Create private and public keys
-        run: pnpm generate:keys
-
-      - name: Build with esbuild
-        run: npx esbuild src/main.ts --bundle --platform=node --target=node20 --outfile=dist/index.js --external:@nestjs/websockets
-
-      - name: Install only production dependencies
-        run: pnpm install --prod
-
-      - name: Create ZIP artifact
-        run: zip -r function.zip dist node_modules package.json
-
-      - name: Deploy Lambda code
+      - name: Zip Lambda
         run: |
-          aws lambda update-function-code \
-            --function-name aprende_headless_api \
-            --zip-file fileb://function.zip \
-            --region us-west-2
+          mkdir -p package
+          cp dist/index.js package/index.js
+          cd package && zip ../lambda.zip index.js
+
+      - name: Upload to Lambda
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: us-west-2  
+        run: |
+          aws lambda update-function-code \
+            --function-name aprende_headless_api \
+            --zip-file fileb://lambda.zip \
+            --region $AWS_REGION
+

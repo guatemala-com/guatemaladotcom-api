@@ -1,13 +1,13 @@
+// src/main.ts
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ConfigService } from '@nestjs/config';
 import { ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
 
-export async function bootstrap() {
+export async function createApp() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
-  const port = configService.get<number>('PORT') || 3001;
 
   // Security middleware
   app.use(helmet());
@@ -36,7 +36,6 @@ export async function bootstrap() {
 
   app.setGlobalPrefix('api');
 
-  await app.listen(port);
+  await app.init();
+  return app;
 }
-
-void bootstrap();

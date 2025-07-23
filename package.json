@@ -25,7 +25,8 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "test:ci": "jest --coverage --coverageThreshold='{ \"global\": { \"branches\": 65, \"functions\": 75, \"lines\": 80, \"statements\": 80 } }'",
     "generate": "pnpm dlx prisma generate",
-    "generate:keys": "node scripts/generate-keys.js"
+    "generate:keys": "node scripts/generate-keys.js",
+    "build:lambda": "esbuild src/handler.ts --bundle --platform=node --target=node20 --outfile=dist/index.js --external:@nestjs/websockets --external:@nestjs/microservices"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
