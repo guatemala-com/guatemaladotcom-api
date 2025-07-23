@@ -30,6 +30,7 @@ describe('GetCategoryByIdUseCase', () => {
   describe('execute', () => {
     it('should return category successfully when category exists', async () => {
       // Arrange
+      const getCategoryByIdSpy = jest.spyOn(learnRepository, 'getCategoryById');
       const categoryId = 1;
       const mockCategory = LearnCategory.fromDatabase({
         id: categoryId,
@@ -40,14 +41,14 @@ describe('GetCategoryByIdUseCase', () => {
         count: 5,
       });
 
-      learnRepository.getCategoryById.mockResolvedValue(mockCategory);
+      getCategoryByIdSpy.mockResolvedValue(mockCategory);
 
       // Act
       const result = await useCase.execute(categoryId);
 
       // Assert
-      expect(learnRepository.getCategoryById).toHaveBeenCalledWith(categoryId);
-      expect(learnRepository.getCategoryById).toHaveBeenCalledTimes(1);
+      expect(getCategoryByIdSpy).toHaveBeenCalledWith(categoryId);
+      expect(getCategoryByIdSpy).toHaveBeenCalledTimes(1);
       expect(result).toEqual({
         id: categoryId,
         name: 'Test Category',
@@ -61,27 +62,29 @@ describe('GetCategoryByIdUseCase', () => {
 
     it('should throw NotFoundException when category does not exist', async () => {
       // Arrange
+      const getCategoryByIdSpy = jest.spyOn(learnRepository, 'getCategoryById');
       const categoryId = 999;
-      learnRepository.getCategoryById.mockResolvedValue(null);
+      getCategoryByIdSpy.mockResolvedValue(null);
 
       // Act & Assert
       await expect(useCase.execute(categoryId)).rejects.toThrow(
         new NotFoundException(`Category with ID ${categoryId} not found`),
       );
-      expect(learnRepository.getCategoryById).toHaveBeenCalledWith(categoryId);
-      expect(learnRepository.getCategoryById).toHaveBeenCalledTimes(1);
+      expect(getCategoryByIdSpy).toHaveBeenCalledWith(categoryId);
+      expect(getCategoryByIdSpy).toHaveBeenCalledTimes(1);
     });
 
     it('should throw error when repository fails', async () => {
       // Arrange
+      const getCategoryByIdSpy = jest.spyOn(learnRepository, 'getCategoryById');
       const categoryId = 1;
       const errorMessage = 'Database connection failed';
-      learnRepository.getCategoryById.mockRejectedValue(new Error(errorMessage));
+      getCategoryByIdSpy.mockRejectedValue(new Error(errorMessage));
 
       // Act & Assert
       await expect(useCase.execute(categoryId)).rejects.toThrow(errorMessage);
-      expect(learnRepository.getCategoryById).toHaveBeenCalledWith(categoryId);
-      expect(learnRepository.getCategoryById).toHaveBeenCalledTimes(1);
+      expect(getCategoryByIdSpy).toHaveBeenCalledWith(categoryId);
+      expect(getCategoryByIdSpy).toHaveBeenCalledTimes(1);
     });
   });
-}); 
+});

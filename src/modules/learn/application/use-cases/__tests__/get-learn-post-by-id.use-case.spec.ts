@@ -30,6 +30,10 @@ describe('GetLearnPostByIdUseCase', () => {
   describe('execute', () => {
     it('should return learn post successfully when post exists', async () => {
       // Arrange
+      const getLearnPostByIdSpy = jest.spyOn(
+        learnRepository,
+        'getLearnPostById',
+      );
       const postId = 1;
       const mockPost = LearnPost.fromDatabase({
         id: postId,
@@ -37,31 +41,35 @@ describe('GetLearnPostByIdUseCase', () => {
         title: 'Test Post',
         excerpt: 'Test excerpt',
         date: '2023-01-01',
-        images: [{
-          original: 'test.jpg',
-          thumbnail: 'test-thumb.jpg',
-          medium: 'test-medium.jpg',
-          web_gallery: 'test-gallery.jpg',
-          app_medium: 'test-app.jpg',
-          events_calendar_thumb: 'test-calendar.jpg',
-          events_square_100: 'test-square.jpg',
-          events_related: 'test-related.jpg',
-          events_xl: 'test-xl.jpg',
-          image_meta: {
-            title: 'Test Image',
-            caption: 'Test Caption',
+        images: [
+          {
+            original: 'test.jpg',
+            thumbnail: 'test-thumb.jpg',
+            medium: 'test-medium.jpg',
+            web_gallery: 'test-gallery.jpg',
+            app_medium: 'test-app.jpg',
+            events_calendar_thumb: 'test-calendar.jpg',
+            events_square_100: 'test-square.jpg',
+            events_related: 'test-related.jpg',
+            events_xl: 'test-xl.jpg',
+            image_meta: {
+              title: 'Test Image',
+              caption: 'Test Caption',
+            },
           },
-        }],
+        ],
         locationGeopoint: {
           latitude: '14.6349',
           longitude: '-90.5069',
         },
         content: 'Test content',
-        categories: [{
-          category_id: 1,
-          category_name: 'Test Category',
-          category_slug: 'test-category',
-        }],
+        categories: [
+          {
+            category_id: 1,
+            category_name: 'Test Category',
+            category_slug: 'test-category',
+          },
+        ],
         author: {
           name: 'Test Author',
           id: 1,
@@ -93,14 +101,14 @@ describe('GetLearnPostByIdUseCase', () => {
         },
       });
 
-      learnRepository.getLearnPostById.mockResolvedValue(mockPost);
+      getLearnPostByIdSpy.mockResolvedValue(mockPost);
 
       // Act
       const result = await useCase.execute(postId);
 
       // Assert
-      expect(learnRepository.getLearnPostById).toHaveBeenCalledWith(postId);
-      expect(learnRepository.getLearnPostById).toHaveBeenCalledTimes(1);
+      expect(getLearnPostByIdSpy).toHaveBeenCalledWith(postId);
+      expect(getLearnPostByIdSpy).toHaveBeenCalledTimes(1);
       expect(result.id).toBe(postId);
       expect(result.title).toBe('Test Post');
       expect(result.url).toBe('https://example.com/test-post');
@@ -108,27 +116,35 @@ describe('GetLearnPostByIdUseCase', () => {
 
     it('should throw NotFoundException when post does not exist', async () => {
       // Arrange
+      const getLearnPostByIdSpy = jest.spyOn(
+        learnRepository,
+        'getLearnPostById',
+      );
       const postId = 999;
-      learnRepository.getLearnPostById.mockResolvedValue(null);
+      getLearnPostByIdSpy.mockResolvedValue(null);
 
       // Act & Assert
       await expect(useCase.execute(postId)).rejects.toThrow(
         new NotFoundException(`Learn post with ID ${postId} not found`),
       );
-      expect(learnRepository.getLearnPostById).toHaveBeenCalledWith(postId);
-      expect(learnRepository.getLearnPostById).toHaveBeenCalledTimes(1);
+      expect(getLearnPostByIdSpy).toHaveBeenCalledWith(postId);
+      expect(getLearnPostByIdSpy).toHaveBeenCalledTimes(1);
     });
 
     it('should throw error when repository fails', async () => {
       // Arrange
+      const getLearnPostByIdSpy = jest.spyOn(
+        learnRepository,
+        'getLearnPostById',
+      );
       const postId = 1;
       const errorMessage = 'Database connection failed';
-      learnRepository.getLearnPostById.mockRejectedValue(new Error(errorMessage));
+      getLearnPostByIdSpy.mockRejectedValue(new Error(errorMessage));
 
       // Act & Assert
       await expect(useCase.execute(postId)).rejects.toThrow(errorMessage);
-      expect(learnRepository.getLearnPostById).toHaveBeenCalledWith(postId);
-      expect(learnRepository.getLearnPostById).toHaveBeenCalledTimes(1);
+      expect(getLearnPostByIdSpy).toHaveBeenCalledWith(postId);
+      expect(getLearnPostByIdSpy).toHaveBeenCalledTimes(1);
     });
   });
-}); 
+});

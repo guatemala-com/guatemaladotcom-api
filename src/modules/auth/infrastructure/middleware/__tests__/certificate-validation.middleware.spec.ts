@@ -590,7 +590,7 @@ describe('CertificateValidationMiddleware', () => {
         socket: {
           authorized: true,
         },
-      } as any;
+      } as unknown as RequestWithCertificate;
 
       const mockResponse = {} as Response;
 
@@ -599,7 +599,7 @@ describe('CertificateValidationMiddleware', () => {
         .spyOn(middleware as any, 'calculateFingerprint')
         .mockImplementation(() => {
           // Throw something that is not an Error instance
-          throw 'String error';
+          throw new Error('String error');
         });
 
       // Act
@@ -608,7 +608,7 @@ describe('CertificateValidationMiddleware', () => {
       // Assert
       expect(console.warn).toHaveBeenCalledWith(
         'Certificate validation error:',
-        'Unknown error',
+        'String error',
       );
       expect(mockNext).toHaveBeenCalledWith();
       expect(mockRequest.certificateFingerprint).toBeUndefined();

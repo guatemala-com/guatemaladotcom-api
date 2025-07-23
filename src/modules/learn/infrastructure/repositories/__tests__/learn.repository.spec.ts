@@ -537,7 +537,10 @@ describe('LearnRepositoryImpl', () => {
       mockPrismaService.aprTermTaxonomy.findFirst.mockResolvedValue(null);
 
       // Act
-      const result = await repository.getLearnPostBySlug('nonexistent-category', 'some-post');
+      const result = await repository.getLearnPostBySlug(
+        'nonexistent-category',
+        'some-post',
+      );
 
       // Assert
       expect(result).toBeNull();
@@ -555,13 +558,18 @@ describe('LearnRepositoryImpl', () => {
       );
 
       // Mock category lookup
-      mockPrismaService.aprTermTaxonomy.findFirst.mockResolvedValueOnce(mockCategoryData);
+      mockPrismaService.aprTermTaxonomy.findFirst.mockResolvedValueOnce(
+        mockCategoryData,
+      );
 
       // Mock posts query returning empty array
       mockPrismaService.aprPosts.findMany.mockResolvedValue([]);
 
       // Act
-      const result = await repository.getLearnPostBySlug('test-category', 'nonexistent-post');
+      const result = await repository.getLearnPostBySlug(
+        'test-category',
+        'nonexistent-post',
+      );
 
       // Assert
       expect(result).toBeNull();

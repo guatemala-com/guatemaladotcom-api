@@ -29,6 +29,7 @@ describe('GetCategoriesUseCase', () => {
   describe('execute', () => {
     it('should return categories successfully', async () => {
       // Arrange
+      const getCategoriesSpy = jest.spyOn(learnRepository, 'getCategories');
       const mockCategories = [
         LearnCategory.fromDatabase({
           id: 1,
@@ -48,13 +49,13 @@ describe('GetCategoriesUseCase', () => {
         }),
       ];
 
-      learnRepository.getCategories.mockResolvedValue(mockCategories);
+      getCategoriesSpy.mockResolvedValue(mockCategories);
 
       // Act
       const result = await useCase.execute();
 
       // Assert
-      expect(learnRepository.getCategories).toHaveBeenCalledTimes(1);
+      expect(getCategoriesSpy).toHaveBeenCalledTimes(1);
       expect(result).toHaveLength(2);
       expect(result[0]).toEqual({
         id: 1,
@@ -78,24 +79,26 @@ describe('GetCategoriesUseCase', () => {
 
     it('should return empty array when no categories exist', async () => {
       // Arrange
-      learnRepository.getCategories.mockResolvedValue([]);
+      const getCategoriesSpy = jest.spyOn(learnRepository, 'getCategories');
+      getCategoriesSpy.mockResolvedValue([]);
 
       // Act
       const result = await useCase.execute();
 
       // Assert
-      expect(learnRepository.getCategories).toHaveBeenCalledTimes(1);
+      expect(getCategoriesSpy).toHaveBeenCalledTimes(1);
       expect(result).toEqual([]);
     });
 
     it('should throw error when repository fails', async () => {
       // Arrange
+      const getCategoriesSpy = jest.spyOn(learnRepository, 'getCategories');
       const errorMessage = 'Database connection failed';
-      learnRepository.getCategories.mockRejectedValue(new Error(errorMessage));
+      getCategoriesSpy.mockRejectedValue(new Error(errorMessage));
 
       // Act & Assert
       await expect(useCase.execute()).rejects.toThrow(errorMessage);
-      expect(learnRepository.getCategories).toHaveBeenCalledTimes(1);
+      expect(getCategoriesSpy).toHaveBeenCalledTimes(1);
     });
   });
-}); 
+});

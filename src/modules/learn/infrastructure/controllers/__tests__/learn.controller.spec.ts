@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
+import { Request } from 'express';
 import { LearnController } from '../learn.controller';
 import { GetCategoriesUseCase } from '../../../application/use-cases/get-categories.use-case';
 import { GetCategoryByIdUseCase } from '../../../application/use-cases/get-category-by-id.use-case';
@@ -149,7 +150,7 @@ describe('LearnController', () => {
     it('should return a learn post DTO when valid path is provided', async () => {
       const mockRequest = {
         url: '/api/learn/article/travel-tips/guatemala-guide',
-      } as any;
+      } as Request;
 
       const result = await controller.getLearnPostByPath(mockRequest);
 
@@ -163,7 +164,7 @@ describe('LearnController', () => {
     it('should handle nested category paths correctly', async () => {
       const mockRequest = {
         url: '/api/learn/article/travel-tips/central-america/guatemala-guide',
-      } as any;
+      } as Request;
 
       const result = await controller.getLearnPostByPath(mockRequest);
 
@@ -177,7 +178,7 @@ describe('LearnController', () => {
     it('should throw NotFoundException when no path after article/', async () => {
       const mockRequest = {
         url: '/api/learn/article/',
-      } as any;
+      } as Request;
 
       await expect(controller.getLearnPostByPath(mockRequest)).rejects.toThrow(
         new NotFoundException('Invalid article path format'),
@@ -187,17 +188,19 @@ describe('LearnController', () => {
     it('should throw NotFoundException when path has less than 2 parts', async () => {
       const mockRequest = {
         url: '/api/learn/article/only-one-part',
-      } as any;
+      } as Request;
 
       await expect(controller.getLearnPostByPath(mockRequest)).rejects.toThrow(
-        new NotFoundException('Invalid article path format - need category/article'),
+        new NotFoundException(
+          'Invalid article path format - need category/article',
+        ),
       );
     });
 
     it('should throw NotFoundException when URL does not contain article path', async () => {
       const mockRequest = {
         url: '/api/learn/categories',
-      } as any;
+      } as Request;
 
       await expect(controller.getLearnPostByPath(mockRequest)).rejects.toThrow(
         new NotFoundException('Invalid article path format'),

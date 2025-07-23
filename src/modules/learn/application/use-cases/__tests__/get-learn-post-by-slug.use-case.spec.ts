@@ -30,6 +30,10 @@ describe('GetLearnPostBySlugUseCase', () => {
   describe('execute', () => {
     it('should return learn post successfully when post exists', async () => {
       // Arrange
+      const getLearnPostBySlugSpy = jest.spyOn(
+        learnRepository,
+        'getLearnPostBySlug',
+      );
       const categorySlug = 'travel';
       const articleSlug = 'guatemala-guide';
       const mockPost = LearnPost.fromDatabase({
@@ -38,31 +42,35 @@ describe('GetLearnPostBySlugUseCase', () => {
         title: 'Guatemala Travel Guide',
         excerpt: 'Complete guide to travel in Guatemala',
         date: '2023-01-01',
-        images: [{
-          original: 'guatemala.jpg',
-          thumbnail: 'guatemala-thumb.jpg',
-          medium: 'guatemala-medium.jpg',
-          web_gallery: 'guatemala-gallery.jpg',
-          app_medium: 'guatemala-app.jpg',
-          events_calendar_thumb: 'guatemala-calendar.jpg',
-          events_square_100: 'guatemala-square.jpg',
-          events_related: 'guatemala-related.jpg',
-          events_xl: 'guatemala-xl.jpg',
-          image_meta: {
-            title: 'Guatemala Image',
-            caption: 'Beautiful Guatemala',
+        images: [
+          {
+            original: 'guatemala.jpg',
+            thumbnail: 'guatemala-thumb.jpg',
+            medium: 'guatemala-medium.jpg',
+            web_gallery: 'guatemala-gallery.jpg',
+            app_medium: 'guatemala-app.jpg',
+            events_calendar_thumb: 'guatemala-calendar.jpg',
+            events_square_100: 'guatemala-square.jpg',
+            events_related: 'guatemala-related.jpg',
+            events_xl: 'guatemala-xl.jpg',
+            image_meta: {
+              title: 'Guatemala Image',
+              caption: 'Beautiful Guatemala',
+            },
           },
-        }],
+        ],
         locationGeopoint: {
           latitude: '15.7835',
           longitude: '-90.2308',
         },
         content: 'Guatemala travel content',
-        categories: [{
-          category_id: 1,
-          category_name: 'Travel',
-          category_slug: categorySlug,
-        }],
+        categories: [
+          {
+            category_id: 1,
+            category_name: 'Travel',
+            category_slug: categorySlug,
+          },
+        ],
         author: {
           name: 'Travel Writer',
           id: 1,
@@ -94,44 +102,67 @@ describe('GetLearnPostBySlugUseCase', () => {
         },
       });
 
-      learnRepository.getLearnPostBySlug.mockResolvedValue(mockPost);
+      getLearnPostBySlugSpy.mockResolvedValue(mockPost);
 
       // Act
       const result = await useCase.execute(categorySlug, articleSlug);
 
       // Assert
-      expect(learnRepository.getLearnPostBySlug).toHaveBeenCalledWith(categorySlug, articleSlug);
-      expect(learnRepository.getLearnPostBySlug).toHaveBeenCalledTimes(1);
+      expect(getLearnPostBySlugSpy).toHaveBeenCalledWith(
+        categorySlug,
+        articleSlug,
+      );
+      expect(getLearnPostBySlugSpy).toHaveBeenCalledTimes(1);
       expect(result.id).toBe(1);
       expect(result.title).toBe('Guatemala Travel Guide');
-      expect(result.url).toBe(`https://example.com/${categorySlug}/${articleSlug}`);
+      expect(result.url).toBe(
+        `https://example.com/${categorySlug}/${articleSlug}`,
+      );
     });
 
     it('should throw NotFoundException when post does not exist', async () => {
       // Arrange
+      const getLearnPostBySlugSpy = jest.spyOn(
+        learnRepository,
+        'getLearnPostBySlug',
+      );
       const categorySlug = 'nonexistent-category';
       const articleSlug = 'nonexistent-article';
-      learnRepository.getLearnPostBySlug.mockResolvedValue(null);
+      getLearnPostBySlugSpy.mockResolvedValue(null);
 
       // Act & Assert
       await expect(useCase.execute(categorySlug, articleSlug)).rejects.toThrow(
-        new NotFoundException(`Article '${articleSlug}' not found in category '${categorySlug}'`),
+        new NotFoundException(
+          `Article '${articleSlug}' not found in category '${categorySlug}'`,
+        ),
       );
-      expect(learnRepository.getLearnPostBySlug).toHaveBeenCalledWith(categorySlug, articleSlug);
-      expect(learnRepository.getLearnPostBySlug).toHaveBeenCalledTimes(1);
+      expect(getLearnPostBySlugSpy).toHaveBeenCalledWith(
+        categorySlug,
+        articleSlug,
+      );
+      expect(getLearnPostBySlugSpy).toHaveBeenCalledTimes(1);
     });
 
     it('should throw error when repository fails', async () => {
       // Arrange
+      const getLearnPostBySlugSpy = jest.spyOn(
+        learnRepository,
+        'getLearnPostBySlug',
+      );
       const categorySlug = 'travel';
       const articleSlug = 'guatemala-guide';
       const errorMessage = 'Database connection failed';
-      learnRepository.getLearnPostBySlug.mockRejectedValue(new Error(errorMessage));
+      getLearnPostBySlugSpy.mockRejectedValue(new Error(errorMessage));
 
       // Act & Assert
-      await expect(useCase.execute(categorySlug, articleSlug)).rejects.toThrow(errorMessage);
-      expect(learnRepository.getLearnPostBySlug).toHaveBeenCalledWith(categorySlug, articleSlug);
-      expect(learnRepository.getLearnPostBySlug).toHaveBeenCalledTimes(1);
+      await expect(useCase.execute(categorySlug, articleSlug)).rejects.toThrow(
+        errorMessage,
+      );
+      expect(getLearnPostBySlugSpy).toHaveBeenCalledWith(
+        categorySlug,
+        articleSlug,
+      );
+      expect(getLearnPostBySlugSpy).toHaveBeenCalledTimes(1);
     });
   });
-}); 
+});

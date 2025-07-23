@@ -365,7 +365,9 @@ describe('GetArticlesByCategoryUseCase', () => {
       };
 
       learnRepository.getCategoryBySlug.mockResolvedValue(mockCategory);
-      learnRepository.getArticlesByCategory.mockResolvedValue(resultWithEmptyUrl);
+      learnRepository.getArticlesByCategory.mockResolvedValue(
+        resultWithEmptyUrl,
+      );
 
       // Act
       const result = await useCase.execute('travel-tips', 1, 10);
