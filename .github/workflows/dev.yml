@@ -62,6 +62,9 @@ jobs:
       - name: Build project
         run: pnpm build
 
+      - name: delete devDependencies
+        run: pnpm prune --prod
+
       - name: Zip Lambda
         run: zip -r lambda.zip dist node_modules
 
