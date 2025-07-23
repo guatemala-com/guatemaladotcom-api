@@ -1,0 +1,26 @@
+service: aprende_headless_api
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  architecture: arm64
+  stage: production
+  region: us-east-1
+  memorySize: 1024
+  logRetentionInDays: 1
+  timeout: 15
+  
+
+functions:
+  api:
+    handler: dist/lambda.handler
+    events:
+      - httpApi:
+          method: any
+          path: /{proxy+}
+
+plugins:
+  - serverless-jetpack
+  - serverless-offline
