@@ -38,7 +38,7 @@ export const mockBuilderReturns = {
   ] as LearnPostCategory[],
 
   author: {
-    name: 'Guest Author',
+    name: 'Ivon Kwei',
     id: 1,
   } as LearnPostAuthor,
 

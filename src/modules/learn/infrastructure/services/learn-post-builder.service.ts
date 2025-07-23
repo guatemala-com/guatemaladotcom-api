@@ -103,12 +103,10 @@ export class LearnPostBuilderService {
       }));
   }
 
-  buildAuthor(authorId: bigint, learnMeta: LearnMeta | null = null): LearnPostAuthor {
-    // Use author information from learn meta if available, otherwise use a default
-    const authorName = learnMeta?.authorName || 'Guest Author';
-    
+  buildAuthor(authorId: bigint): LearnPostAuthor {
+    // For now, return a default author since user table structure is not defined
     return {
-      name: authorName,
+      name: 'Ivon Kwei',
       id: Number(authorId),
     };
   }

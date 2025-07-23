@@ -365,7 +365,6 @@ describe('LearnRepositoryImpl', () => {
       );
       expect(mockLearnPostBuilderService.buildAuthor).toHaveBeenCalledWith(
         BigInt(1),
-        mockLearnMeta,
       );
       expect(mockLearnPostBuilderService.buildSponsor).toHaveBeenCalledWith(
         mockLearnMeta,
@@ -435,10 +434,6 @@ describe('LearnRepositoryImpl', () => {
       const post = await repository.getLearnPostById(123);
 
       expect(post).toBeInstanceOf(LearnPost);
-      expect(mockLearnPostBuilderService.buildAuthor).toHaveBeenCalledWith(
-        BigInt(1),
-        null,
-      );
       expect(mockLearnPostBuilderService.buildSponsor).toHaveBeenCalledWith(
         null,
       );
