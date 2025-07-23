@@ -13,6 +13,7 @@ import { POST_STATUS } from '../consts/post-status';
 import {
   CategoryWithTerm,
   AttachmentPost,
+  TermRelationship,
 } from '../../domain/types/prisma-types';
 import { LearnPostBuilderService } from '../services/learn-post-builder.service';
 import { ConfigService } from '@nestjs/config';
@@ -29,14 +30,16 @@ export class LearnRepositoryImpl implements LearnRepository {
    * Build category path for a post based on its categories
    * Returns the deepest (most specific) category path
    */
-  private async buildCategoryPath(termRelationships: any[]): Promise<string> {
+  private async buildCategoryPath(
+    termRelationships: TermRelationship[],
+  ): Promise<string> {
     if (termRelationships.length === 0) {
       return '';
     }
 
     // Get all categories for this post
     const categoryRelationships = termRelationships.filter(
-      (rel: any) => rel?.termTaxonomy?.taxonomy === TAXONOMIES.CATEGORY
+      (rel) => rel?.termTaxonomy?.taxonomy === TAXONOMIES.CATEGORY,
     );
 
     if (categoryRelationships.length === 0) {
@@ -44,16 +47,16 @@ export class LearnRepositoryImpl implements LearnRepository {
     }
 
     // Find the deepest category (the one with the highest level in hierarchy)
-    let deepestCategory = null;
+    let deepestCategory: TermRelationship['termTaxonomy'] | null = null;
     let maxDepth = -1;
 
     for (const rel of categoryRelationships) {
-      const categoryId = Number((rel as any).termTaxonomy.term.termId);
+      const categoryId = Number(rel.termTaxonomy.term.termId);
       const depth = await this.getCategoryDepth(categoryId);
-      
+
       if (depth > maxDepth) {
         maxDepth = depth;
-        deepestCategory = (rel as any).termTaxonomy;
+        deepestCategory = rel.termTaxonomy;
       }
     }
 
@@ -62,7 +65,9 @@ export class LearnRepositoryImpl implements LearnRepository {
     }
 
     // Build the full path from root to this category
-    return await this.buildCategoryPathRecursive(Number((deepestCategory as any).term.termId));
+    return await this.buildCategoryPathRecursive(
+      Number(deepestCategory.term.termId),
+    );
   }
 
   /**
@@ -88,7 +93,9 @@ export class LearnRepositoryImpl implements LearnRepository {
   /**
    * Build category path recursively from category ID to root
    */
-  private async buildCategoryPathRecursive(categoryId: number): Promise<string> {
+  private async buildCategoryPathRecursive(
+    categoryId: number,
+  ): Promise<string> {
     const category = await this.prisma.aprTermTaxonomy.findFirst({
       where: {
         term: { termId: BigInt(categoryId) },
@@ -109,7 +116,9 @@ export class LearnRepositoryImpl implements LearnRepository {
     }
 
     // Get parent path and append current slug
-    const parentPath = await this.buildCategoryPathRecursive(Number(category.parent));
+    const parentPath = await this.buildCategoryPathRecursive(
+      Number(category.parent),
+    );
     return parentPath ? `${parentPath}/${slug}` : slug;
   }
 
@@ -367,7 +376,7 @@ export class LearnRepositoryImpl implements LearnRepository {
 
     // Build the full category path for the URL
     const categoryPath = await this.buildCategoryPath(post.termRelationships);
-    const fullUrl = categoryPath 
+    const fullUrl = categoryPath
       ? `${this.configService.get('APP_URL')}/${categoryPath}/${post.postName}`
       : `${this.configService.get('APP_URL')}/${post.postName}`;
 
@@ -415,7 +424,9 @@ export class LearnRepositoryImpl implements LearnRepository {
     }
 
     // Verify the full category path matches
-    const actualCategoryPath = await this.buildCategoryPathRecursive(Number(category.term.termId));
+    const actualCategoryPath = await this.buildCategoryPathRecursive(
+      Number(category.term.termId),
+    );
     if (actualCategoryPath !== categoryPath) {
       return null; // Category path doesn't match
     }
@@ -614,8 +625,10 @@ export class LearnRepositoryImpl implements LearnRepository {
         );
 
         // Build the full category path for the URL
-        const categoryPath = await this.buildCategoryPath(post.termRelationships);
-        const fullUrl = categoryPath 
+        const categoryPath = await this.buildCategoryPath(
+          post.termRelationships,
+        );
+        const fullUrl = categoryPath
           ? `${this.configService.get('APP_URL')}/${categoryPath}/${post.postName}`
           : `${this.configService.get('APP_URL')}/${post.postName}`;
 

@@ -1,4 +1,12 @@
-import { Controller, Get, Param, ParseIntPipe, Query, NotFoundException, Req } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  ParseIntPipe,
+  Query,
+  NotFoundException,
+  Req,
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -54,7 +62,8 @@ export class LearnController {
   @Get('article/:id')
   @ApiOperation({
     summary: 'Get article by ID (deprecated)',
-    description: 'Retrieve a published article by its numeric ID. Use slug-based endpoint instead.',
+    description:
+      'Retrieve a published article by its numeric ID. Use slug-based endpoint instead.',
     deprecated: true,
   })
   @ApiParam({
@@ -79,7 +88,8 @@ export class LearnController {
   @Get('article/*')
   @ApiOperation({
     summary: 'Get article by category path and slug',
-    description: 'Retrieve a published article by its full category path and slug (e.g., cultura-guatemalteca/patrimonios/article-slug)',
+    description:
+      'Retrieve a published article by its full category path and slug (e.g., cultura-guatemalteca/patrimonios/article-slug)',
   })
   @ApiResponse({
     status: 200,
@@ -94,7 +104,7 @@ export class LearnController {
         statusCode: { type: 'number', example: 404 },
         message: {
           type: 'string',
-          example: "Article not found in category path",
+          example: 'Article not found in category path',
         },
         error: { type: 'string', example: 'Not Found' },
       },
@@ -105,15 +115,17 @@ export class LearnController {
   ): Promise<LearnPostResponseDto> {
     // Extract the full path after 'article/'
     const fullPath = request.url.split('/learn/article/')[1];
-    
+
     if (!fullPath) {
       throw new NotFoundException('Invalid article path format');
     }
 
     const pathParts = fullPath.split('/');
-    
+
     if (pathParts.length < 2) {
-      throw new NotFoundException('Invalid article path format - need category/article');
+      throw new NotFoundException(
+        'Invalid article path format - need category/article',
+      );
     }
 
     // Last part is the article slug, everything before is the category path

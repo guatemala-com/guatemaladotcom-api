@@ -40,19 +40,17 @@ describe('LearnController', () => {
     getLearnPostBySlugUseCaseExecuteMock = jest
       .fn()
       .mockResolvedValue(mockLearnPost);
-    getArticlesByCategoryUseCaseExecuteMock = jest
-      .fn()
-      .mockResolvedValue({
-        articles: [],
-        pagination: {
-          page: 1,
-          limit: 10,
-          total: 0,
-          totalPages: 0,
-          hasNextPage: false,
-          hasPreviousPage: false,
-        },
-      });
+    getArticlesByCategoryUseCaseExecuteMock = jest.fn().mockResolvedValue({
+      articles: [],
+      pagination: {
+        page: 1,
+        limit: 10,
+        total: 0,
+        totalPages: 0,
+        hasNextPage: false,
+        hasPreviousPage: false,
+      },
+    });
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [LearnController],

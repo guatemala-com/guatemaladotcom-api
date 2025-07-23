@@ -23,4 +23,4 @@ export class GetLearnPostBySlugUseCase {
 
     return learnPost.toResponse();
   }
-} 
+}
