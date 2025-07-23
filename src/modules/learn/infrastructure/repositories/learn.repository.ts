@@ -266,7 +266,7 @@ export class LearnRepositoryImpl implements LearnRepository {
     const categories = this.learnPostBuilder.buildCategories(
       post.termRelationships,
     );
-    const author = this.learnPostBuilder.buildAuthor(post.postAuthor);
+    const author = this.learnPostBuilder.buildAuthor(post.postAuthor, learnMeta);
     const sponsor = this.learnPostBuilder.buildSponsor(learnMeta);
     const locationGeopoint = this.learnPostBuilder.buildLocationGeopoint(
       post.metas,
@@ -395,7 +395,7 @@ export class LearnRepositoryImpl implements LearnRepository {
         const categories = this.learnPostBuilder.buildCategories(
           post.termRelationships,
         );
-        const author = this.learnPostBuilder.buildAuthor(post.postAuthor);
+        const author = this.learnPostBuilder.buildAuthor(post.postAuthor, learnMeta);
         const sponsor = this.learnPostBuilder.buildSponsor(learnMeta);
         const seo = this.learnPostBuilder.buildSeo(
           [],

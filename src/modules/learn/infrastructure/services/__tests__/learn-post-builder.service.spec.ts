@@ -155,11 +155,32 @@ describe('LearnPostBuilderService', () => {
   });
 
   describe('buildAuthor', () => {
-    it('should build author from author ID', () => {
+    it('should build author from author ID with default name when no learn meta', () => {
       const author = service.buildAuthor(BigInt(123));
 
       expect(author).toEqual({
-        name: 'Ivon Kwei',
+        name: 'Guest Author',
+        id: 123,
+      });
+    });
+
+    it('should build author from learn meta when available', () => {
+      const learnMeta = mockSponsoredLearnMeta;
+      learnMeta.authorName = 'John Doe';
+      const author = service.buildAuthor(BigInt(123), learnMeta);
+
+      expect(author).toEqual({
+        name: 'John Doe',
+        id: 123,
+      });
+    });
+
+    it('should use default name when learn meta has no author name', () => {
+      const learnMeta = { ...mockSponsoredLearnMeta, authorName: null };
+      const author = service.buildAuthor(BigInt(123), learnMeta);
+
+      expect(author).toEqual({
+        name: 'Guest Author',
         id: 123,
       });
     });
@@ -168,7 +189,7 @@ describe('LearnPostBuilderService', () => {
       const author = service.buildAuthor(BigInt(999999));
 
       expect(author).toEqual({
-        name: 'Ivon Kwei',
+        name: 'Guest Author',
         id: 999999,
       });
     });
