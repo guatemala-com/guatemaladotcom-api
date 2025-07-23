@@ -318,5 +318,60 @@ describe('GetArticlesByCategoryUseCase', () => {
       // Assert
       expect(result.articles[0].slug).toBe('article-with-long-slug');
     });
+
+    it('should handle empty URL by using default empty slug', async () => {
+      // Arrange
+      const postWithEmptyUrl = LearnPost.fromDatabase({
+        id: 1,
+        url: '', // Empty URL to trigger the || '' fallback
+        title: 'Test Post',
+        excerpt: 'Test excerpt',
+        date: '2024-01-15T10:30:00.000Z',
+        images: [],
+        locationGeopoint: null,
+        content: 'Test content',
+        categories: [],
+        author: { name: 'Test Author', id: 1 },
+        keywords: [],
+        isSponsored: 0,
+        sponsor: {
+          name: '',
+          image_url: '',
+          image: [],
+          image_sidebar_url: '',
+          image_sidebar: [],
+          image_content_url: '',
+          image_content: [],
+          extra_data: '',
+        },
+        seo: {
+          title: '',
+          description: '',
+          canonical: '',
+          focus_keyword: '',
+          seo_score: 0,
+          og_title: '',
+          og_description: '',
+          og_image: '',
+          twitter_title: '',
+          twitter_description: '',
+          twitter_image: '',
+        },
+      });
+
+      const resultWithEmptyUrl: PaginatedResult<LearnPost> = {
+        data: [postWithEmptyUrl],
+        total: 1,
+      };
+
+      learnRepository.getCategoryBySlug.mockResolvedValue(mockCategory);
+      learnRepository.getArticlesByCategory.mockResolvedValue(resultWithEmptyUrl);
+
+      // Act
+      const result = await useCase.execute('travel-tips', 1, 10);
+
+      // Assert
+      expect(result.articles[0].slug).toBe('');
+    });
   });
 });
