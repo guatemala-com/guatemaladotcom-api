@@ -572,5 +572,47 @@ describe('CertificateValidationMiddleware', () => {
       expect(mockRequest.clientCertificate).toBeUndefined();
       expect(console.log).not.toHaveBeenCalled();
     });
+
+    it('should handle non-Error exceptions in calculateFingerprint', () => {
+      // Arrange
+      const mockCertificate = {
+        subject: { CN: 'test-client.example.com' },
+        serialNumber: '123456789',
+        fingerprint: null, // Force fallback path
+        raw: Buffer.from('mock-certificate-data'),
+      };
+
+      const mockRequest = {
+        connection: {
+          getPeerCertificate: () => mockCertificate,
+          authorized: true,
+        },
+        socket: {
+          authorized: true,
+        },
+      } as unknown as RequestWithCertificate;
+
+      const mockResponse = {} as Response;
+
+      // Mock the calculateFingerprint method to throw a non-Error exception
+      jest
+        .spyOn(middleware as any, 'calculateFingerprint')
+        .mockImplementation(() => {
+          // Throw something that is not an Error instance
+          throw new Error('String error');
+        });
+
+      // Act
+      middleware.use(mockRequest, mockResponse, mockNext);
+
+      // Assert
+      expect(console.warn).toHaveBeenCalledWith(
+        'Certificate validation error:',
+        'String error',
+      );
+      expect(mockNext).toHaveBeenCalledWith();
+      expect(mockRequest.certificateFingerprint).toBeUndefined();
+      expect(mockRequest.clientCertificate).toBeUndefined();
+    });
   });
 });

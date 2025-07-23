@@ -57,6 +57,7 @@ export class LearnPost {
       sponsor_image_content: this.sponsor.image_content,
       sponsor_extra_data: this.sponsor.extra_data,
       seo: this.seo,
+      audionote_url: `https://audionotas.guatemala.com/aprende/${this.id}.mp3`,
     };
   }
 

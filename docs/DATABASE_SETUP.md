@@ -19,6 +19,7 @@ DATABASE_URL="mysql://guatemala_user:user_password_here@localhost:3306/aprende_d
 # Application Configuration
 PORT=3001
 NODE_ENV=development
+APP_URL=https://aprende.guatemala.com
 
 # JWT Configuration
 JWT_PRIVATE_KEY_PATH=keys/private.pem

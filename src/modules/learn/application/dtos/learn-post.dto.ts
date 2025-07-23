@@ -73,4 +73,5 @@ export class LearnPostResponseDto {
   sponsor_image_content: any[];
   sponsor_extra_data: string;
   seo: LearnPostSeoDto;
+  audionote_url: string;
 }

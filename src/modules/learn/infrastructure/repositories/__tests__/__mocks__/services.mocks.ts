@@ -9,9 +9,18 @@ export const mockPrismaService = {
   },
   aprPosts: {
     findUnique: jest.fn(),
+    findMany: jest.fn(),
+    count: jest.fn(),
   },
   aprLearnMeta: {
     findUnique: jest.fn(),
+    findMany: jest.fn(),
+  },
+  aprPostmeta: {
+    findMany: jest.fn(),
+  },
+  aprTermRelationships: {
+    findMany: jest.fn(),
   },
 };
 

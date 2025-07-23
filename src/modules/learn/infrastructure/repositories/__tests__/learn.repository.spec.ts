@@ -465,4 +465,114 @@ describe('LearnRepositoryImpl', () => {
       );
     });
   });
+
+  describe('getCategoryBySlug', () => {
+    it('should return a learn category when found by slug', async () => {
+      // Arrange
+      const mockCategoryData = createMockCategoryWithTerm(
+        1, // id
+        'Test Category', // name
+        'test-category', // slug
+        'Test Description', // description
+        0, // parent
+        5, // count
+      );
+
+      mockPrismaService.aprTermTaxonomy.findFirst
+        .mockResolvedValueOnce(mockCategoryData) // getCategoryBySlug call
+        .mockResolvedValue([]); // getCategoryChildren call
+
+      // Act
+      const category = await repository.getCategoryBySlug('test-category');
+
+      // Assert
+      expect(category).toBeInstanceOf(LearnCategory);
+      expect(category?.name).toBe('Test Category');
+      expect(category?.slug).toBe('test-category');
+      expect(mockPrismaService.aprTermTaxonomy.findFirst).toHaveBeenCalledWith({
+        where: {
+          term: {
+            slug: 'test-category',
+          },
+          taxonomy: 'category',
+        },
+        include: {
+          term: true,
+        },
+      });
+    });
+
+    it('should return null when category is not found by slug', async () => {
+      // Arrange
+      mockPrismaService.aprTermTaxonomy.findFirst.mockResolvedValue(null);
+
+      // Act
+      const category = await repository.getCategoryBySlug('nonexistent-slug');
+
+      // Assert
+      expect(category).toBeNull();
+    });
+  });
+
+  describe('getArticlesByCategory', () => {
+    it('should return empty result when category is not found', async () => {
+      // Arrange
+      mockPrismaService.aprTermTaxonomy.findFirst.mockResolvedValue(null);
+
+      // Act
+      const result = await repository.getArticlesByCategory('nonexistent', {
+        page: 1,
+        limit: 10,
+      });
+
+      // Assert
+      expect(result.data).toHaveLength(0);
+      expect(result.total).toBe(0);
+    });
+  });
+
+  describe('getLearnPostBySlug', () => {
+    it('should return null when category is not found', async () => {
+      // Arrange
+      mockPrismaService.aprTermTaxonomy.findFirst.mockResolvedValue(null);
+
+      // Act
+      const result = await repository.getLearnPostBySlug(
+        'nonexistent-category',
+        'some-post',
+      );
+
+      // Assert
+      expect(result).toBeNull();
+    });
+
+    it('should return null when no posts match the slug in category', async () => {
+      // Arrange
+      const mockCategoryData = createMockCategoryWithTerm(
+        1, // id
+        'Test Category', // name
+        'test-category', // slug
+        'Test Description', // description
+        0, // parent
+        5, // count
+      );
+
+      // Mock category lookup
+      mockPrismaService.aprTermTaxonomy.findFirst.mockResolvedValueOnce(
+        mockCategoryData,
+      );
+
+      // Mock posts query returning empty array
+      mockPrismaService.aprPosts.findMany.mockResolvedValue([]);
+
+      // Act
+      const result = await repository.getLearnPostBySlug(
+        'test-category',
+        'nonexistent-post',
+      );
+
+      // Assert
+      expect(result).toBeNull();
+    });
+  });
 });
