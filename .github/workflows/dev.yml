@@ -36,6 +36,15 @@ jobs:
       - name: Generate Prisma client
         run: pnpm generate
 
+      - name: Run linting
+        run: pnpm lint
+
+      - name: Check formatting
+        run: pnpm format:check
+
+      - name: Create private and public keys
+        run: pnpm generate:keys
+
       - name: Install esbuild
         run: pnpm add -D esbuild
 
