@@ -3,7 +3,6 @@ name: Deploy Lambda
 on:
   push:
     branches: [feature/github-actions]
-      #- main
 
 jobs:
   build-and-deploy:
@@ -11,7 +10,7 @@ jobs:
 
     env:
       AWS_REGION: us-west-2
-      FUNCTION_NAME: aprende_headless_api
+      FUNCTION_NAME: aprende-headless-api
 
     strategy:
       matrix:
@@ -37,30 +36,32 @@ jobs:
       - name: Generate Prisma client
         run: pnpm generate
 
+      - name: Install esbuild
+        run: pnpm add -D esbuild
+
       - name: Build with esbuild
         run: |
-          pnpm add -D esbuild
           npx esbuild src/handler.ts --bundle --platform=node --target=node20 --outfile=dist/index.js \
             --external:@nestjs/websockets \
             --external:@nestjs/microservices \
             --external:@codegenie/serverless-express
 
-      - name: Zip Lambda
+      - name: Create Lambda zip
         run: |
           mkdir -p bundle
           cp dist/index.js bundle/index.js
           cd bundle
           zip -r ../lambda.zip .
 
-      - name: Deploy to AWS Lambda
+      - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
-          inline-script: |
-            aws lambda update-function-code \
-              --function-name ${{ env.FUNCTION_NAME }} \
-              --zip-file fileb://lambda.zip
 
-
+      - name: Deploy to AWS Lambda
+        run: |
+          aws lambda update-function-code \
+            --function-name ${{ env.FUNCTION_NAME }} \
+            --zip-file fileb://lambda.zip
