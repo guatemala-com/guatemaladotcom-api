@@ -29,6 +29,7 @@
     "build:lambda": "esbuild src/handler.ts --bundle --platform=node --target=node20 --outfile=dist/index.js --external:@nestjs/websockets --external:@nestjs/microservices"
   },
   "dependencies": {
+    "@codegenie/serverless-express": "^4.17.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.0.1",
