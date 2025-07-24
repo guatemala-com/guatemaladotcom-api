@@ -1,67 +1,60 @@
-name: Deploy lambda
+name: Deploy Lambda
 
 on:
   push:
     branches: [feature/github-actions]
+      #- main
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        node-version: [20.x]
+    env:
+      AWS_REGION: us-west-2
+      FUNCTION_NAME: aprende_headless_api
 
     steps:
-      - name: Checkout code
+      - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Setup Node.js ${{ matrix.node-version }}
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: '20'
+          cache: 'pnpm'
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
         with:
-          version: 10.11.0
-
-      - name: Get pnpm store directory
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-
-      - name: Setup pnpm cache
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
+          version: 8
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Generate Prisma client
-        run: pnpm generate
-
-      - name: Build Lambda
-        run: pnpm build:lambda
+      - name: Build with esbuild
+        run: |
+          pnpm add -D esbuild
+          npx esbuild src/handler.ts --bundle --platform=node --target=node20 --outfile=dist/index.js \
+            --external:@nestjs/websockets \
+            --external:@nestjs/microservices \
+            --external:@codegenie/serverless-express
 
       - name: Zip Lambda
         run: |
-          mkdir -p package
-          cp dist/index.js package/index.js
-          cd package && zip ../lambda.zip index.js
+          mkdir -p bundle
+          cp dist/index.js bundle/index.js
+          cd bundle
+          zip -r ../lambda.zip .
 
-      - name: Upload to Lambda
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: us-west-2  
-        run: |
-          aws lambda update-function-code \
-            --function-name aprende_headless_api \
-            --zip-file fileb://lambda.zip \
-            --region $AWS_REGION
+      - name: Deploy to AWS Lambda
+        uses: aws-actions/aws-cli-action@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+          inline-script: |
+            aws lambda update-function-code \
+              --function-name ${{ env.FUNCTION_NAME }} \
+              --zip-file fileb://lambda.zip
+
 

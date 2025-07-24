@@ -1,10 +1,11 @@
 // src/handler.ts
 import serverlessExpress from '@codegenie/serverless-express';
 import { createApp } from './main';
+import type { Handler, Context, APIGatewayProxyEvent } from 'aws-lambda';
 
-let cachedServer;
+let cachedServer: ReturnType<typeof serverlessExpress> | null = null;
 
-export const handler = async (event, context) => {
+export const handler: Handler = async (event: APIGatewayProxyEvent, context: Context) => {
   if (!cachedServer) {
     const app = await createApp();
     const expressApp = app.getHttpAdapter().getInstance();
